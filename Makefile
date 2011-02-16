@@ -6,7 +6,8 @@ INCLUDES=mysql_common.h MysqlQuery.h Tile.h Channel.h Logrec.h
 
 tilegen: $(SOURCES) $(INCLUDES)
 	g++ -g $(CFLAGS) $(SOURCES) -o $@ $(LDFLAGS) 
-	-./tilegen
+
+#-./tilegen
 
 tile.8:
 	time curl -b btsession http://localhost:3000/tiles/1/Josh_Basestation.Temperature/8.9835.json > 8.9835.json
