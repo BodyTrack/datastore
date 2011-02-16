@@ -1,0 +1,6 @@
+make login
+make tile.6
+   real 16.4 seconds
+make tile.8
+   real 69.6 seconds
+
