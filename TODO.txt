@@ -1,0 +1,6 @@
+PDR receiver
+
+
+
+DONE show zero time and how it changes with RTC records
+

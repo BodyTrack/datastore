@@ -4,6 +4,10 @@ LDFLAGS = -L/usr/local/mysql/lib -lmysqlclient
 SOURCES=tilegen.cpp mysql_common.cpp MysqlQuery.cpp Channel.cpp Logrec.cpp Tile.cpp utils.cpp
 INCLUDES=mysql_common.h MysqlQuery.h Tile.h Channel.h Logrec.h
 
+read_bt: Binrec.cpp crc32.cpp
+	g++ -g $(CFLAGS) $^ -o $@
+	./read_bt
+
 tilegen: $(SOURCES) $(INCLUDES)
 	g++ -g $(CFLAGS) $(SOURCES) -o $@ $(LDFLAGS) 
 
