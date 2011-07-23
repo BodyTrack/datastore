@@ -1,0 +1,7 @@
+*.broken
+TestChannel
+TestFilesystemKVS
+TestImport
+TestTile
+TestTileIndex
+*.kvs

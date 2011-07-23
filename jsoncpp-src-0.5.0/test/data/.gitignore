@@ -1,0 +1,4 @@
+*.actual
+*.actual-rewrite
+*.rewrite
+*.process-output
