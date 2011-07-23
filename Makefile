@@ -1,15 +1,33 @@
-CFLAGS = -Wall -I /usr/local/mysql/include
-LDFLAGS = -L/usr/local/mysql/lib -lmysqlclient
+CPPFLAGS = -Wall -Ijsoncpp-src-0.5.0/include -I/opt/local/include
+LDFLAGS = -Ljsoncpp-src-0.5.0/libs/linux-gcc -ljson_linux-gcc
+SQL_CPPFLAGS = -I/usr/local/mysql/include 
+SQL_LDFLAGS = -L/usr/local/mysql/lib -lmysqlclient
 
 SOURCES=tilegen.cpp mysql_common.cpp MysqlQuery.cpp Channel.cpp Logrec.cpp Tile.cpp utils.cpp
 INCLUDES=mysql_common.h MysqlQuery.h Tile.h Channel.h Logrec.h
 
-read_bt: Binrec.cpp crc32.cpp
-	g++ -g $(CFLAGS) $^ -o $@
+
+import:	import.cpp ImportBT.cpp Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h
+	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
+
+docs:
+	doxygen KVS.cpp KVS.h
+
+TestFileBlock: TestFileBlock.cpp FileBlock.cpp FileBlock.h MappedFile.cpp MappedFile.h
+	g++ -g $(CPPFLAGS) -o $@ $^
+	./$@
+
+read_bt: Binrec.cpp crc32.cpp DataStore.cpp utils.cpp jsoncpp-src-0.5.0/libs
+	g++ -g $(CPPFLAGS) Binrec.cpp crc32.cpp DataStore.cpp utils.cpp -o $@  -L./jsoncpp-src-0.5.0/libs/linux-gcc -ljson_linux-gcc
 	./read_bt
 
+jsoncpp-src-0.5.0/libs:
+	cd jsoncpp-src-0.5.0; python scons.py platform=linux-gcc check
+	cd jsoncpp-src-0.5.0/libs; ln -sf linux-gcc-* linux-gcc
+	cd jsoncpp-src-0.5.0/libs/linux-gcc; ln -sf libjson_linux-gcc-*.a libjson_linux-gcc.a
+
 tilegen: $(SOURCES) $(INCLUDES)
-	g++ -g $(CFLAGS) $(SOURCES) -o $@ $(LDFLAGS) 
+	g++ -g $(CPPFLAGS) $(SOURCES) -o $@ $(LDFLAGS) 
 
 #-./tilegen
 

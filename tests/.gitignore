@@ -5,3 +5,5 @@ TestImport
 TestTile
 TestTileIndex
 *.kvs
+*.dSYM
+kvs.test

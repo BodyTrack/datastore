@@ -1,5 +1,11 @@
+// C
+#include <sys/stat.h>
+#include <sys/time.h>
+
+// C++
 #include <iostream>
 
+// Self
 #include "utils.h"
 
 std::string string_vprintf(const char *fmt, va_list args)
@@ -33,3 +39,30 @@ std::string string_printf(const char *fmt, ...)
   return ret;
 }
 
+#ifdef _WIN32
+#define stat _stat
+#define fstat _fstat
+#endif
+
+bool
+filename_exists(const std::string &filename)
+{
+  struct stat statbuf;
+  int ret= stat(filename.c_str(), &statbuf);
+  return (ret == 0);
+}
+
+unsigned long long microtime() {
+#ifdef WIN32
+  return ((long long)GetTickCount() * 1000);
+#else
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return ((long long) tv.tv_sec * (long long) 1000000 +
+          (long long) tv.tv_usec);
+#endif
+}
+
+unsigned long long millitime() { return microtime() / 1000; }
+
+double doubletime() { return microtime() / 1000000.0; }

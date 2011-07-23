@@ -3,3 +3,11 @@
 tilegen
 *~
 tilegen.dSYM
+junk
+*.dSYM
+read_bt
+old
+latex
+import
+html
+*.kvs
