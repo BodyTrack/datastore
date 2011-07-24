@@ -92,6 +92,8 @@ int main(int argc, char **argv)
   
   fprintf(stderr, "gettile finished in %lld msec\n", millitime() - begin_time);
 
+  double line_break_threshold = client_tile_index.duration() / 512.0 * 4.0; // 4*binsize
+  
   if (samples.size()) {
     fprintf(stderr, "outputting %zd samples\n", samples.size());
     printf("{");
@@ -102,15 +104,30 @@ int main(int argc, char **argv)
     printf("\"fields\":[\"time\",\"mean\",\"stddev\",\"count\"]");
     printf(",");
     printf("\"data\":[");
+    double previous_sample_time = client_tile_index.start_time();
     for (unsigned i = 0; i < samples.size(); i++) {
       if (i) putchar(',');
+      // TODO: improve linebreak calculations:
+      // 1) observe channel specs line break size from database (expressed in time;  some observations have long time periods and others short)
+      // 2) insert breaks at beginning or end of tile if needed
+      // 3) should client be the one to decide where line breaks are (if we give it the threshold?)
+      if (samples[i].time - previous_sample_time > line_break_threshold) {
+	// Insert line break, which has value -1e+308
+	printf("[%f,-1e308,0,1],", 0.5*(samples[i].time+previous_sample_time));
+      }
+      previous_sample_time = samples[i].time;
       printf("[%f,%g,%g,%g]", samples[i].time, samples[i].value, samples[i].variance, samples[i].weight);
     }
+    if (client_tile_index.end_time() - previous_sample_time > line_break_threshold) {
+      printf("[%f,-1e308,0,1],", 0.5*(previous_sample_time + client_tile_index.end_time()));
+    }
+      
     printf("]");
     printf("}");
   } else {
     fprintf(stderr, "No samples\n");
     printf("{}");
   }
+
   return 0;
 }

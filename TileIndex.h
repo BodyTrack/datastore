@@ -50,14 +50,14 @@ struct TileIndex {
     if (is_null()) return std::numeric_limits<double>::max();
     if (is_negative_all()) return -std::numeric_limits<double>::max();
     if (is_nonnegative_all()) return 0;
-    return level_to_duration(level)*offset;
+    return duration()*offset;
   }
 
   double end_time() const {
     if (is_null()) return -std::numeric_limits<double>::max();
     if (is_negative_all()) return 0;
     if (is_nonnegative_all()) return std::numeric_limits<double>::max();
-    return level_to_duration(level)*(offset+1);
+    return duration()*(offset+1);
   }
 
   bool contains_time(double time) const {
@@ -65,7 +65,11 @@ struct TileIndex {
   }
 
   double position(double time) const {
-    return (time - start_time()) / level_to_duration(level);
+    return (time - start_time()) / duration();
+  }
+
+  double duration() const {
+    return level_to_duration(level);
   }
 
   static double level_to_duration(int level) {

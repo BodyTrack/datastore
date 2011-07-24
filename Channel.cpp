@@ -295,6 +295,13 @@ void Channel::move_root_upwards(TileIndex new_root_index, TileIndex old_root_ind
   }
 }
 
+// If ti exists, read it
+// Otherwise, if any ancestors of ti exist, read the closest one
+// Otherwise, if ti is an ancestor of the datastore's root, return the datastore's root
+// Otherwise, don't return a tile
+// When returning a tile, returns true and leaves tile in ret and index of tile in ret_index
+// When not returnng a tile, returns false
+
 bool Channel::read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, Tile &ret) const {
   Locker lock(*this);  // Lock self and hold lock until exiting this method
   ChannelInfo info;
@@ -302,19 +309,24 @@ bool Channel::read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, 
   if (!success) return false;
   TileIndex root = info.nonnegative_root_tile_index;
 
-  if (ti != root && !root.is_ancestor_of(ti)) {
-    // Tile isn't under root
-    return false;
-  }
-
-  assert(tile_exists(root));
-  ret_index = root;
-  while (ret_index != ti) {
-    TileIndex child = ti.start_time() < ret_index.left_child().end_time() ? ret_index.left_child() : ret_index.right_child();
-    if (!tile_exists(child)) break;
-    ret_index = child;
+  if (ti.is_ancestor_of(root)) {
+    ret_index = root;
+  } else {
+    if (ti != root && !root.is_ancestor_of(ti)) {
+      // Tile isn't under root
+      return false;
+    }
+    
+    assert(tile_exists(root));
+    ret_index = root;
+    while (ret_index != ti) {
+      TileIndex child = ti.start_time() < ret_index.left_child().end_time() ? ret_index.left_child() : ret_index.right_child();
+      if (!tile_exists(child)) break;
+      ret_index = child;
+    }
   }
   // ret_index now holds closest ancestor to ti (or ti itself if it exists)  
+    
   assert(read_tile(ret_index, ret));
   return true;
 }

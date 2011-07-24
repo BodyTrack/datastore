@@ -1,4 +1,4 @@
-CPPFLAGS = -g -Wall -Ijsoncpp-src-0.5.0/include -I/opt/local/include
+CPPFLAGS = -O3 -g -Wall -Ijsoncpp-src-0.5.0/include -I/opt/local/include
 # LDFLAGS = -Ljsoncpp-src-0.5.0/libs -ljson_linux_libmt -static
 LDFLAGS = -static
 SQL_CPPFLAGS = -I/usr/local/mysql/include 
@@ -7,7 +7,10 @@ SQL_LDFLAGS = -L/usr/local/mysql/lib -lmysqlclient
 SOURCES=tilegen.cpp mysql_common.cpp MysqlQuery.cpp Channel.cpp Logrec.cpp Tile.cpp utils.cpp
 INCLUDES=mysql_common.h MysqlQuery.h Tile.h Channel.h Logrec.h
 
-all: import
+all: import gettile
+
+clean:
+	rm -f import gettile
 
 ARCH:=$(shell uname -s -m | sed 's/ /_/' | tr 'A-Z' 'a-z')
 
