@@ -67,3 +67,8 @@ unsigned long long microtime() {
 unsigned long long millitime() { return microtime() / 1000; }
 
 double doubletime() { return microtime() / 1000000.0; }
+
+std::string rtrim(const std::string &x) {
+  return x.substr(0, x.find_last_not_of(" \r\n\t\f")+1);
+}
+

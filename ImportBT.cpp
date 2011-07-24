@@ -41,8 +41,7 @@ void import_bt_file(KVS &store, const std::string &bt_file, int uid, const std::
 
     fprintf(stderr, "%.6f: %s %zd samples\n", (*samples)[0].time, channel_name.c_str(), samples->size());
     
-    size_t tile_size = 1024*1024*6/4;
-    Channel ch(store, uid, dev_nickname + "." + channel_name, tile_size);
+    Channel ch(store, uid, dev_nickname + "." + channel_name);
     ch.add_data(*samples);
   }  
 }

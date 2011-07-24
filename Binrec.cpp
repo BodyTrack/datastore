@@ -425,6 +425,7 @@ void parse_bt_file(const std::string &infile,
       case RTYPE_START_OF_FILE:
         sofr = StartOfFileRecord(source, payload, payload_len);
         ttt.receive_binrec(sofr);
+	info.channel_specs = sofr.channel_specs;
         break;
       case RTYPE_RTC:
       {
@@ -446,6 +447,18 @@ void parse_bt_file(const std::string &infile,
           if (data_samples.size()) {
 	    info.min_time = std::min(info.min_time, data_samples.front().time);
 	    info.max_time = std::max(info.max_time, data_samples.back().time);
+	    double min_value = 
+	      info.channel_specs[channel_name]["min_value"].isNull() ? +1.0/0.0 :
+	      info.channel_specs[channel_name]["min_value"].asDouble();
+	    double max_value = 
+	      info.channel_specs[channel_name]["max_value"].isNull() ? -1.0/0.0 :
+	      info.channel_specs[channel_name]["max_value"].asDouble();
+	    for (unsigned i = 0; i < data_samples.size(); i++) {
+	      min_value = std::min(min_value, data_samples[i].value);
+	      max_value = std::max(max_value, data_samples[i].value);
+	    }
+	    info.channel_specs[channel_name]["min_value"] = Json::Value(min_value);
+	    info.channel_specs[channel_name]["max_value"] = Json::Value(max_value);
             
             if (verbose) {
               fprintf(stderr,

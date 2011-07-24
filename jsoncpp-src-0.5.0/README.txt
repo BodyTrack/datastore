@@ -26,7 +26,7 @@ http://sourceforge.net/project/showfiles.php?group_id=30337&package_id=67375
 Unzip it in the directory where you found this README file. scons.py Should be 
 at the same level as README.
 
-python scons.py platform=PLTFRM [TARGET]
+python scons.py platform=PLTFRM [TARGET]b
 where PLTFRM may be one of:
 	suncc Sun C++ (Solaris)
 	vacpp Visual Age C++ (AIX)

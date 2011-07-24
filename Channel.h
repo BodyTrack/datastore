@@ -17,9 +17,12 @@
 ///
 /// It's OK for there to be multiple Channel instances in multiple processes referring to the same channel in the KVS.
 
+#define BT_CHANNEL_MAX_TILE_SIZE (1024*1024)
+#define BT_CHANNEL_DOUBLE_SAMPLES 32768
+
 class Channel {
 public:
-  Channel(KVS &kvs, int owner_id, const std::string &name, size_t max_tile_size);
+  Channel(KVS &kvs, int owner_id, const std::string &name, size_t max_tile_size=BT_CHANNEL_MAX_TILE_SIZE);
   /// \class Locker Channel.h
   ///
   /// Lock channel upon construction and unlock channel upon destruction.

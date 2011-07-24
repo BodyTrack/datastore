@@ -1,5 +1,6 @@
 // C
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 // Local
@@ -31,6 +32,27 @@ void test_samples_single_tile(Channel &ch, double begin_time, size_t num_samples
   assert(tile.double_samples == data);
 }
 
+void test_subsampling(KVS &kvs)
+{
+  Channel ch(kvs, 2, "a.d");
+  size_t num_samples=100000;
+  std::vector<DataSample<double> > data(num_samples);
+  for (size_t i = 0; i < num_samples; i++) {
+    data[i] = DataSample<double>(i+1, 33);
+  }
+  ch.add_data(data);
+  // Fetch top-level tile
+  Tile tile;
+  assert(ch.read_tile(TileIndex(17, 0), tile));
+  double total_weight = 0;
+  for (size_t i = 0; i < tile.double_samples.size(); i++) {
+    DataSample<double> &sample = tile.double_samples[i];
+    assert(fabs(sample.value - 33) < 1e-10);
+    total_weight += sample.weight;
+  }
+  assert(fabs(total_weight - num_samples) < 1e-10);
+}
+
 void test_samples_multiple_tiles(Channel &ch, double begin_time, size_t num_samples)
 {
   fprintf(stderr, "test_samples_multiple_tiles(%zd):\n", num_samples);
@@ -55,13 +77,12 @@ void test_samples_multiple_tiles(Channel &ch, double begin_time, size_t num_samp
 }
 
 int main(int argc, char **argv) {
-  int tile_size = 1024*1024*6/4;
   system("rm -rf channelstore_test.kvs");
   system("mkdir channelstore_test.kvs");
   FilesystemKVS kvs("channelstore_test.kvs");
   kvs.set_verbosity(0);
 
-  Channel ch(kvs, 2, "a.b", tile_size);
+  Channel ch(kvs, 2, "a.b");
   {
     Channel::Locker locker(ch);
   }
@@ -117,7 +138,7 @@ int main(int argc, char **argv) {
   assert(!ch.read_tile(TileIndex(10,21), t2));
   assert(!ch.has_tile(TileIndex(10,21)));
 
-  Channel ch2(kvs, 2, "a.c", tile_size);
+  Channel ch2(kvs, 2, "a.c");
 
   test_samples_single_tile(ch2, 1309780800.0, 1);
   test_samples_single_tile(ch2, 1309780800.0, 10);
@@ -131,6 +152,8 @@ int main(int argc, char **argv) {
   test_samples_multiple_tiles(ch2, 1309780800.0, 1000000);
   //test_samples_multiple_tiles(ch2, 1309780800.0, 3000000);
   
+  test_subsampling(kvs);
+
   fprintf(stderr, "Tests succeeded\n");
   return 0;
 };

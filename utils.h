@@ -12,6 +12,7 @@ bool filename_exists(const std::string &filename);
 unsigned long long microtime();
 unsigned long long millitime();
 double doubletime();
+std::string rtrim(const std::string &x);
 
 #endif
 

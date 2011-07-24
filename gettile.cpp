@@ -25,6 +25,7 @@ void usage()
 
 int main(int argc, char **argv)
 {
+  long long begin_time = millitime();
   char **argptr = argv+1;
   
   if (!*argptr) usage();
@@ -61,7 +62,7 @@ int main(int argc, char **argv)
 
   Tile tile;
   TileIndex actual_index;
-  Channel ch(store, uid, full_channel_name, 1024*1024*6/4);
+  Channel ch(store, uid, full_channel_name);
   bool success = ch.read_tile_or_closest_ancestor(requested_index, actual_index, tile);
 
   std::vector<DataSample<double> > samples;
@@ -89,6 +90,8 @@ int main(int argc, char **argv)
     }
   }
   
+  fprintf(stderr, "gettile finished in %lld msec\n", millitime() - begin_time);
+
   if (samples.size()) {
     fprintf(stderr, "outputting %zd samples\n", samples.size());
     printf("{");

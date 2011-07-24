@@ -123,6 +123,7 @@ struct ParseInfo {
   double max_time;
   int good_records;
   int bad_records;
+  Json::Value channel_specs;
 };
 
 void parse_bt_file(const std::string &infile,

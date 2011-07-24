@@ -1,18 +1,24 @@
 CPPFLAGS = -g -Wall -Ijsoncpp-src-0.5.0/include -I/opt/local/include
-LDFLAGS = -Ljsoncpp-src-0.5.0/libs/linux-gcc-4.4.3 -ljson_linux-gcc-4.4.3_libmt -static
+# LDFLAGS = -Ljsoncpp-src-0.5.0/libs -ljson_linux_libmt -static
+LDFLAGS = -static
 SQL_CPPFLAGS = -I/usr/local/mysql/include 
 SQL_LDFLAGS = -L/usr/local/mysql/lib -lmysqlclient
 
 SOURCES=tilegen.cpp mysql_common.cpp MysqlQuery.cpp Channel.cpp Logrec.cpp Tile.cpp utils.cpp
 INCLUDES=mysql_common.h MysqlQuery.h Tile.h Channel.h Logrec.h
 
+all: import
 
-gettile:	gettile.cpp Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h
+jsoncpp-src-0.5.0/libs/libjson_libmt.a:
+	(cd jsoncpp-src-0.5.0 && python scons.py platform=linux-gcc && cd libs && ln -sf linux*/*.a libjson_libmt.a)
+
+gettile: gettile.cpp Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0/libs/libjson_libmt.a
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 	./gettile /home/bodytrack/projects/bodytrack/website/db/dev.kvs 1 A_Home_Desk.Temperature 0 2560569
 
-import:	import.cpp ImportBT.cpp Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h
+import:	import.cpp ImportBT.cpp Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0/libs/libjson_libmt.a
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
+	./import foo.kvs 1 ar-basestation bt/ar_basestation/4cfcff7d.bt
 
 docs:
 	doxygen KVS.cpp KVS.h

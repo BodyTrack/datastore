@@ -256,42 +256,31 @@ void Channel::create_parent_tile_from_children(TileIndex parent_index, Tile &par
   // when do we want to do a real low-pass filter?
   // do we need to filter more than just the child tiles? e.g. gaussian beyond the tile border
 
-  unsigned n_samples = 50000; // TODO: compute this number instead of hardcoding
-  parent.double_samples.resize(n_samples);
-  assert(parent.binary_length() <= m_max_tile_size);
-
-  double start_time = parent_index.start_time(), end_time = parent_index.end_time();
-  for (unsigned i = 0; i < n_samples; i++) {
-    parent.double_samples[i].time = start_time + (end_time-start_time) * (i + 0.5) / n_samples;
-    parent.double_samples[i].value = 0;
-    parent.double_samples[i].weight = 0;
-    parent.double_samples[i].variance = 0;
-  }
-
+  unsigned n_samples = BT_CHANNEL_DOUBLE_SAMPLES; // TODO: compute this number instead of hardcoding
+  std::vector<DataAccumulator<double> > bins(n_samples);
+  
   for (unsigned j = 0; j < 2; j++) {
     Tile &child = children[j];
     for (unsigned i = 0; i < child.double_samples.size(); i++) {
       // Version 1: bin samples into correct bin
       // Version 2: try gaussian or lanczos(1) or 1/4 3/4 3/4 1/4
       // TODO: use DataAccumulator
-
+      
       DataSample<double> &sample = child.double_samples[i];
-      assert(start_time <= sample.time && sample.time < end_time);
-      unsigned bin = floor((sample.time-start_time) * n_samples / (end_time - start_time));
+      assert(parent_index.contains_time(sample.time));
+      unsigned bin = floor(parent_index.position(sample.time) * n_samples);
       assert(bin < n_samples);
-      parent.double_samples[bin].value += sample.value;
-      parent.double_samples[bin].weight += sample.weight;
-      // TODO: compute variance
+      bins[bin] += sample;
     }
   }
 
-  for (unsigned i = 0; i < parent.double_samples.size(); i++) {
-    DataSample<double> &sample = parent.double_samples[i];
-    if (sample.weight != 0) {
-      sample.value /= sample.weight;
-      sample.weight /= 2;
+  parent.double_samples.clear();
+  for (unsigned i = 0; i < bins.size(); i++) {
+    if (bins[i].weight > 0) {
+      parent.double_samples.push_back(bins[i].get_sample());
     }
   }
+  assert(parent.binary_length() <= m_max_tile_size);
 }
 
 void Channel::move_root_upwards(TileIndex new_root_index, TileIndex old_root_index) {

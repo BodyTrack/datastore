@@ -53,9 +53,9 @@ int main(int argc, char **argv)
     ParseInfo info;
     import_bt_file(store, files[i], uid, dev_nickname, info);
     printf("{");
-    printf("\"failed_binrecs\":%d", info.bad_records);
-    printf(",");
     printf("\"successful_binrecs\":%d", info.good_records);
+    printf(",");
+    printf("\"failed_binrecs\":%d", info.bad_records);
     if (!isinf(info.min_time)) {
       printf(",");
       printf("\"min_time\":%.9f", info.min_time);
@@ -64,6 +64,8 @@ int main(int argc, char **argv)
       printf(",");
       printf("\"max_time\":%.9f", info.max_time);
     }
+    printf(",");
+    printf("\"channel_specs\":%s", rtrim(Json::FastWriter().write( info.channel_specs )).c_str());
     printf("}\n");
   }
   fprintf(stderr, "Done\n");
