@@ -9,6 +9,12 @@ INCLUDES=mysql_common.h MysqlQuery.h Tile.h Channel.h Logrec.h
 
 all: import
 
+ARCH:=$(shell uname -s -m | sed 's/ /_/' | tr 'A-Z' 'a-z')
+
+install-local: gettile import
+	mkdir -p ../website/lib/datastore/$(ARCH)
+	cp $^ ../website/lib/datastore/$(ARCH)
+
 jsoncpp-src-0.5.0/libs/libjson_libmt.a:
 	(cd jsoncpp-src-0.5.0 && python scons.py platform=linux-gcc && cd libs && ln -sf linux*/*.a libjson_libmt.a)
 
