@@ -64,6 +64,10 @@ struct TileIndex {
     return start_time() <= time && time < end_time();
   }
 
+  double position(double time) const {
+    return (time - start_time()) / level_to_duration(level);
+  }
+
   static double level_to_duration(int level) {
     return pow(2.0, level);
   }

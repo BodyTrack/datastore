@@ -1,6 +1,7 @@
 // C
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <stdio.h>
 
 // C++
 #include <iostream>

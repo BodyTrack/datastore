@@ -1,5 +1,7 @@
 // C
 #include <assert.h>
+#include <stdio.h>
+#include <string.h>
 
 // C++
 #include <map>
@@ -361,8 +363,13 @@ void PeriodicDataRecord::set_time(const TickToTime &ttt) {
 
 void parse_bt_file(const std::string &infile,
                    std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > > &data,
-                   std::vector<ParseError> &errors)
+                   std::vector<ParseError> &errors,
+		   ParseInfo &info)
 {
+  info.min_time = 1.0/0.0;
+  info.max_time = -1.0/0.0;
+  info.good_records = 0;
+  info.bad_records = 0;
   double begintime = doubletime();
   // Memory-map file
   FILE *in = fopen(infile.c_str(), "r");
@@ -410,6 +417,7 @@ void parse_bt_file(const std::string &infile,
         // Recoverable error;  add to errors and try to continue
         errors.push_back(ParseError("Incorrect CRC32 byte %d.  read 0x%x != calculated 0x%x\n",
                                     source.pos(ptr - 4), crc, calculated_crc));
+	if (record_type == RTYPE_PERIODIC_DATA) info.bad_records++;
         continue;
       }
 
@@ -436,6 +444,8 @@ void parse_bt_file(const std::string &infile,
           std::vector<DataSample<double> > data_samples;
           pdr.get_data_samples(i, data_samples);
           if (data_samples.size()) {
+	    info.min_time = std::min(info.min_time, data_samples.front().time);
+	    info.max_time = std::max(info.max_time, data_samples.back().time);
             
             if (verbose) {
               fprintf(stderr,
@@ -457,6 +467,7 @@ void parse_bt_file(const std::string &infile,
             }
             
             data[channel_name]->insert(data[channel_name]->end(), data_samples.begin(), data_samples.end());
+	    info.good_records++;
           }
           last_tick[channel_name] = pdr.first_sample_long_tick;
           
@@ -472,6 +483,7 @@ void parse_bt_file(const std::string &infile,
     catch (ParseError &e) {
       errors.push_back(ParseError("In record starting at byte %d in file %s:\n%s",
                                   source.pos(beginning_of_record), infile.c_str(), e.what()));
+      info.bad_records++;
     }
   }
   

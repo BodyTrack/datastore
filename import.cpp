@@ -3,6 +3,11 @@
 #include <string>
 #include <vector>
 
+// C
+#include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 // Local
 #include "Binrec.h"
 #include "FilesystemKVS.h"
@@ -12,7 +17,7 @@
 void usage()
 {
   std::cerr << "Usage:\n";
-  std::cerr << "import store.kvs uid file1.bt ... fileN.bt\n";
+  std::cerr << "import store.kvs uid device-nickname file1.bt ... fileN.bt\n";
   std::cerr << "Exiting...\n";
   exit(1);
 }
@@ -28,6 +33,9 @@ int main(int argc, char **argv)
   int uid = atoi(*argptr++);
   if (uid <= 0) usage();
   
+  if (!*argptr) usage();
+  std::string dev_nickname = *argptr++;
+
   std::vector<std::string> files(argptr, argv+argc);
   if (!files.size()) usage();
 
@@ -42,12 +50,21 @@ int main(int argc, char **argv)
   FilesystemKVS store(storename.c_str());
   for (unsigned i = 0; i < files.size(); i++) {
     fprintf(stderr, "Importing %s into UID %d\n", files[i].c_str(), uid);
-    try {
-      import_bt_file(store, files[i], uid);
-    } catch (const ParseError &p) {
-      fprintf(stderr, "Error reading %s:\n%s\n", files[i].c_str(), p.what());
-      fprintf(stderr, "Skipping %s:  no data imported.\n", files[i].c_str());
+    ParseInfo info;
+    import_bt_file(store, files[i], uid, dev_nickname, info);
+    printf("{");
+    printf("\"failed_binrecs\":%d", info.bad_records);
+    printf(",");
+    printf("\"successful_binrecs\":%d", info.good_records);
+    if (!isinf(info.min_time)) {
+      printf(",");
+      printf("\"min_time\":%.9f", info.min_time);
     }
+    if (!isinf(info.max_time)) {
+      printf(",");
+      printf("\"max_time\":%.9f", info.max_time);
+    }
+    printf("}\n");
   }
   fprintf(stderr, "Done\n");
   return 0;

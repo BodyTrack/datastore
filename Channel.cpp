@@ -2,6 +2,8 @@
 #include <assert.h>
 #include <set>
 #include <stdexcept>
+#include <stdio.h>
+#include <string.h>
 
 // Local
 #include "TileIndex.h"
@@ -271,6 +273,7 @@ void Channel::create_parent_tile_from_children(TileIndex parent_index, Tile &par
     for (unsigned i = 0; i < child.double_samples.size(); i++) {
       // Version 1: bin samples into correct bin
       // Version 2: try gaussian or lanczos(1) or 1/4 3/4 3/4 1/4
+      // TODO: use DataAccumulator
 
       DataSample<double> &sample = child.double_samples[i];
       assert(start_time <= sample.time && sample.time < end_time);
@@ -301,6 +304,30 @@ void Channel::move_root_upwards(TileIndex new_root_index, TileIndex old_root_ind
     write_tile(ti.parent(), old_root_tile);
     ti = ti.parent();
   }
+}
+
+bool Channel::read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, Tile &ret) const {
+  Locker lock(*this);  // Lock self and hold lock until exiting this method
+  ChannelInfo info;
+  bool success = read_info(info);
+  if (!success) return false;
+  TileIndex root = info.nonnegative_root_tile_index;
+
+  if (ti != root && !root.is_ancestor_of(ti)) {
+    // Tile isn't under root
+    return false;
+  }
+
+  assert(tile_exists(root));
+  ret_index = root;
+  while (ret_index != ti) {
+    TileIndex child = ti.start_time() < ret_index.left_child().end_time() ? ret_index.left_child() : ret_index.right_child();
+    if (!tile_exists(child)) break;
+    ret_index = child;
+  }
+  // ret_index now holds closest ancestor to ti (or ti itself if it exists)  
+  assert(read_tile(ret_index, ret));
+  return true;
 }
 
 TileIndex Channel::find_lowest_child_overlapping_time(TileIndex ti, double t) const {

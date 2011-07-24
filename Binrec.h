@@ -118,8 +118,16 @@ public:
                                     const std::vector<DataSample<double> > &samples) = 0;
 };
 
+struct ParseInfo {
+  double min_time;
+  double max_time;
+  int good_records;
+  int bad_records;
+};
+
 void parse_bt_file(const std::string &infile,
                    std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > > &data,
-                   std::vector<ParseError> &errors);
+                   std::vector<ParseError> &errors,
+		   ParseInfo &info);
 
 #endif

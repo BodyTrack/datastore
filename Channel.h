@@ -54,6 +54,7 @@ public:
   bool tile_exists(TileIndex ti) const;
   std::string dump_tile_summaries() const;
 
+  bool read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, Tile &ret) const;
 
 private:
   KVS &m_kvs;
