@@ -1,3 +1,18 @@
+Installing on OS X:
+  Please install boost using macports:
+    sudo port install boost
+  Build and install
+    make
+    make install
+
+Installing on Ubuntu:
+  Please install boost using apt-get
+    sudo apt-get install libboost-dev libboost-doc (from memory, may be incorrect)
+    sudo apt-get install libboost-thread (from memory, may be incorrect)
+
+
+
+
 performance test 1000 records
 import utility
 

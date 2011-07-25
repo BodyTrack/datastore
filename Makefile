@@ -1,6 +1,12 @@
 CPPFLAGS = -O3 -g -Wall -Ijsoncpp-src-0.5.0/include -I/opt/local/include
 # LDFLAGS = -Ljsoncpp-src-0.5.0/libs -ljson_linux_libmt -static
-LDFLAGS = -static
+
+ifeq ($(shell uname -s),Linux)
+  LDFLAGS = -static
+else
+  LDFLAGS =
+endif
+
 SQL_CPPFLAGS = -I/usr/local/mysql/include 
 SQL_LDFLAGS = -L/usr/local/mysql/lib -lmysqlclient
 
