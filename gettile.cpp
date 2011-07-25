@@ -77,8 +77,11 @@ int main(int argc, char **argv)
     }
   }
 
+  bool binned = false;
+
   if (samples.size() > 512) {
     // Bin
+    binned = true;
     std::vector<DataAccumulator<double> > bins(512);
     for (unsigned i = 0; i < samples.size(); i++) {
       DataSample<double> &sample=samples[i];
@@ -93,6 +96,17 @@ int main(int argc, char **argv)
   fprintf(stderr, "gettile finished in %lld msec\n", millitime() - begin_time);
 
   double line_break_threshold = client_tile_index.duration() / 512.0 * 4.0; // 4*binsize
+  if (!binned && samples.size() > 1) {
+    // Find the median distance between samples
+    std::vector<double> spacing(samples.size()-1);
+    for (size_t i = 0; i < samples.size()-1; i++) {
+      spacing[i] = samples[i+1].time - samples[i].time;
+    }
+    std::sort(spacing.begin(), spacing.end());
+    double median_spacing = spacing[samples.size()/2];
+    // Set line_break_threshold to larger of 4*median_spacing and 4*bin_size
+    line_break_threshold = std::max(line_break_threshold, median_spacing * 4);
+  }
   
   if (samples.size()) {
     fprintf(stderr, "outputting %zd samples\n", samples.size());
