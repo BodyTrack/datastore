@@ -3,25 +3,19 @@ Installing on OS X:
     sudo port install boost
   Build and install
     make
-    make install
+    make test
+    make install-local
 
 Installing on Ubuntu:
   Please install boost using apt-get
     sudo apt-get install libboost-dev libboost-doc (from memory, may be incorrect)
     sudo apt-get install libboost-thread (from memory, may be incorrect)
+  Build and install
+    make
+    make test
+    make install-local
 
-
-
-
-performance test 1000 records
-import utility
-
-
-
-
-Try import all bt files
-
-
+-----------
 
 If only one tile, pick:
 
