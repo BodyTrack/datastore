@@ -46,7 +46,7 @@ test-import-bt: import
 
 test-import-json: import
 	mkdir -p foo.kvs
-	./import foo.kvs 1 ar-basestation /tmp/json_import20110805-4317-1pzfs94-0.json
+	./import foo.kvs 1 ar-basestation testdata/json_import20110805-4317-1pzfs94-0.json
 
 docs:
 	doxygen KVS.cpp KVS.h
