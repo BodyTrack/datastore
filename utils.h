@@ -14,5 +14,10 @@ unsigned long long millitime();
 double doubletime();
 std::string rtrim(const std::string &x);
 
+std::string filename_sans_directory(const std::string &filename);
+std::string filename_directory(const std::string &filename);
+std::string filename_sans_suffix(const std::string &filename);
+std::string filename_suffix(const std::string &filename);
+
 #endif
 

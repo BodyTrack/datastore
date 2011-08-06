@@ -72,3 +72,84 @@ std::string rtrim(const std::string &x) {
   return x.substr(0, x.find_last_not_of(" \r\n\t\f")+1);
 }
 
+#ifdef _WIN32
+// Windows                                                                                                                                                                                                 
+#define ALLOWABLE_DIRECTORY_DELIMITERS "/\\"
+#define DIRECTORY_DELIMITER '\\'
+#define DIRECTORY_DELIMITER_STRING "\\"
+#define FILENAMES_CASE_SENSITIVE 0
+#elif defined(__MWERKS__)
+// mac os <=9                                                                                                                                                                                              
+#define ALLOWABLE_DIRECTORY_DELIMITERS ":"
+#define DIRECTORY_DELIMITER ':'
+#define DIRECTORY_DELIMITER_STRING ":"
+#define FILENAMES_CASE_SENSITIVE 0
+#else
+// UNIX                                                                                                                                                                                                    
+#define ALLOWABLE_DIRECTORY_DELIMITERS "/"
+#define DIRECTORY_DELIMITER '/'
+#define DIRECTORY_DELIMITER_STRING "/"
+#define FILENAMES_CASE_SENSITIVE 1
+#endif
+
+std::string
+filename_sans_directory(const std::string &filename)
+{
+  size_t lastDirDelim= filename.find_last_of(ALLOWABLE_DIRECTORY_DELIMITERS);
+  // No directory delimiter, so return filename                                                                                                                                                            
+  if (lastDirDelim == std::string::npos) return filename;
+  // Return everything after the delimiter                                                                                                                                                                 
+  return filename.substr(lastDirDelim+1);
+}
+
+std::string
+filename_directory(const std::string &filename)
+{
+  size_t lastDirDelim= filename.find_last_of(ALLOWABLE_DIRECTORY_DELIMITERS);
+  // No directory delimiter, so return nothing                                                                                                                                                             
+  if (lastDirDelim == std::string::npos) return "";
+  // Return everything up to just before the last delimiter                                                                                                                                                
+  return filename.substr(0, lastDirDelim);
+}
+
+std::string
+filename_sans_suffix(const std::string &filename)
+{
+  // Find the last '.'                                                                                                                                                                                     
+  size_t lastDot= filename.find_last_of(".");
+  if (lastDot == std::string::npos) return filename;
+
+  // Find the last directory delimiter                                                                                                                                                                     
+  size_t lastDirDelim= filename.find_last_of(ALLOWABLE_DIRECTORY_DELIMITERS);
+
+  if (lastDirDelim != std::string::npos &&
+      lastDot < lastDirDelim) {
+    // The last dot was inside the directory name, so return as is                                                                                                                                         
+    return filename;
+  }
+
+  // Return everything up to the last dot                                                                                                                                                                  
+  return filename.substr(0, lastDot);
+}
+
+std::string
+filename_suffix(const std::string &filename)
+{
+  // Find the last '.'                                                                                                                                                                                     
+  size_t lastDot= filename.find_last_of(".");
+  if (lastDot == std::string::npos) return "";
+
+  // Find the last directory delimiter                                                                                                                                                                     
+  size_t lastDirDelim= filename.find_last_of(ALLOWABLE_DIRECTORY_DELIMITERS);
+
+  if (lastDirDelim != std::string::npos &&
+      lastDot < lastDirDelim) {
+    // The last dot was inside the directory name, so return as is                                                                                                                                         
+    return "";
+  }
+
+  // Return everything after to the last dot                                                                                                                                                               
+  return filename.substr(lastDot+1);
+}
+
+

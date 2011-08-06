@@ -14,14 +14,7 @@
 
 // Local
 #include "DataSample.h"
-
-class ParseError : public std::exception {
-  std::string m_what;
-public:
-  ParseError(const char *fmt, ...);
-  virtual const char* what() const throw();
-  virtual ~ParseError() throw();
-};
+#include "Parse.h"
 
 struct Source {
   const unsigned char *begin;
@@ -116,14 +109,6 @@ class BtParserReceiver {
 public:
   virtual void receive_data_samples(const std::string &channel_name,
                                     const std::vector<DataSample<double> > &samples) = 0;
-};
-
-struct ParseInfo {
-  double min_time;
-  double max_time;
-  int good_records;
-  int bad_records;
-  Json::Value channel_specs;
 };
 
 void parse_bt_file(const std::string &infile,

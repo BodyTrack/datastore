@@ -7,11 +7,13 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <strings.h>
 
 // Local
 #include "Binrec.h"
 #include "FilesystemKVS.h"
 #include "ImportBT.h"
+#include "ImportJson.h"
 #include "utils.h"
 
 void usage()
@@ -48,14 +50,25 @@ int main(int argc, char **argv)
 
   fprintf(stderr, "Opening store %s\n", storename.c_str());
   FilesystemKVS store(storename.c_str());
+
+
   for (unsigned i = 0; i < files.size(); i++) {
-    fprintf(stderr, "Importing %s into UID %d\n", files[i].c_str(), uid);
+    std::string filename = files[i];
+    fprintf(stderr, "Importing %s into UID %d\n", filename.c_str(), uid);
+    
     ParseInfo info;
-    import_bt_file(store, files[i], uid, dev_nickname, info);
+    if (!strcasecmp(filename_suffix(filename).c_str(), "bt")) {
+      import_bt_file(store, files[i], uid, dev_nickname, info);
+    } else if (!strcasecmp(filename_suffix(filename).c_str(), "json")) {
+      import_json_file(store, files[i], uid, dev_nickname, info);
+    } else {
+      printf("{\"failure\":\"Unrecognized filename suffix %s\"}\n", filename_suffix(filename).c_str());
+      continue;
+    }
     printf("{");
-    printf("\"successful_binrecs\":%d", info.good_records);
+    printf("\"successful_records\":%d", info.good_records);
     printf(",");
-    printf("\"failed_binrecs\":%d", info.bad_records);
+    printf("\"failed_records\":%d", info.bad_records);
     if (!isinf(info.min_time)) {
       printf(",");
       printf("\"min_time\":%.9f", info.min_time);
