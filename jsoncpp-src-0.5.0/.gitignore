@@ -3,3 +3,4 @@ bin
 buildscons
 libs
 dist
+*.json

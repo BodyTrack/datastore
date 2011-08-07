@@ -17,8 +17,10 @@
 ///
 /// It's OK for there to be multiple Channel instances in multiple processes referring to the same channel in the KVS.
 
+// TODO: compute these instead of hardcoding
 #define BT_CHANNEL_MAX_TILE_SIZE (1024*1024)
 #define BT_CHANNEL_DOUBLE_SAMPLES 32768
+#define BT_CHANNEL_STRING_SAMPLES 8192
 
 class Channel {
 public:
@@ -51,6 +53,7 @@ public:
   void create_tile(TileIndex ti);
   
   void add_data(const std::vector<DataSample<double> > &data);
+  void add_data(const std::vector<DataSample<std::string> > &data);
   void read_data(std::vector<DataSample<double> > &data, double begin, double end) const;
   
   std::string tile_key(TileIndex ti) const;
@@ -73,6 +76,8 @@ private:
   TileIndex split_tile_if_needed(TileIndex ti, Tile &tile);
   void create_parent_tile_from_children(TileIndex ti, Tile &parent, Tile children[]);
   void move_root_upwards(TileIndex new_root, TileIndex old_root);
+  template <class T>
+  void add_data_internal(const std::vector<DataSample<T> > &data);
 };
 
 /// \class ChannelLocker Channel.h

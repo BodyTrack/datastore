@@ -62,7 +62,7 @@ bool Channel::read_tile(TileIndex ti, Tile &tile) const {
 void Channel::write_tile(TileIndex ti, const Tile &tile) {
   std::string binary;
   tile.to_binary(binary);
-  assert(binary.size() <= m_max_tile_size);
+  //assert(binary.size() <= m_max_tile_size);
   m_kvs.set(tile_key(ti), binary);
 }
 
@@ -75,11 +75,20 @@ void Channel::create_tile(TileIndex ti) {
   write_tile(ti, tile);
 }
 
+void Channel::add_data(const std::vector<DataSample<double> > &data) {
+  add_data_internal(data);
+}
+
+void Channel::add_data(const std::vector<DataSample<std::string> > &data) {
+  add_data_internal(data);
+}
+
 /// Add data to channel
 /// \param data Data to add;  must be sorted in ascending time
 /// Locking:  This method acquires a lock to channel as needed to guarantee update is successful in an environment
 /// where multiple simultaneous updates are happening via add_data from multiple processes.
-void Channel::add_data(const std::vector<DataSample<double> > &data) {
+template <class T>
+void Channel::add_data_internal(const std::vector<DataSample<T> > &data) {
   if (!data.size()) return;
   // Sanity check
   if (data[0].time < 0) throw std::runtime_error("Unimplemented feature: adding data with negative time");
@@ -125,10 +134,10 @@ void Channel::add_data(const std::vector<DataSample<double> > &data) {
     Tile tile;
     assert(read_tile(ti, tile));
     //fprintf(stderr, "add_data: reading tile %s\n", ti.to_string().c_str());
-    const DataSample<double> *begin = &data[i];
+    const DataSample<T> *begin = &data[i];
     while (i < data.size() && ti.contains_time(data[i].time)) i++;
-    const DataSample<double> *end = &data[i];
-    tile.insert_double_samples(begin, end);
+    const DataSample<T> *end = &data[i];
+    tile.insert_samples(begin, end);
     
     //fprintf(stderr, "add_data: added %zd samples\n", end-begin);
     TileIndex new_root = split_tile_if_needed(ti, tile);
@@ -200,6 +209,15 @@ void Channel::read_data(std::vector<DataSample<double> > &data, double begin, do
   }
 }
 
+template <class T>
+void split_samples(const std::vector<DataSample<T> > &from, double split_time, Tile &to_a, Tile &to_b) {
+  size_t split_index;
+  for (split_index = 0; split_index < from.size() && from[split_index].time < split_time; split_index++) {}
+
+  to_a.insert_samples(&from[0], &from[split_index]);
+  to_b.insert_samples(&from[split_index], &from[from.size()]);
+}
+
 /// Split tile if needed (if it's too large)
 /// If we're looking to split an "all" tile (negative_all or nonnegative_all), select a new root tile.
 /// \param ti Tile Index to split if needed
@@ -217,7 +235,7 @@ TileIndex Channel::split_tile_if_needed(TileIndex ti, Tile &tile) {
   // data, and that a proper root tile location couldn't be selected.  Select a new root tile now.
   if (ti.is_nonnegative_all()) {
     // TODO: this breaks if all samples are at one time
-    ti = new_root_index = TileIndex::index_containing(tile.double_samples[0].time, tile.double_samples.back().time);
+    ti = new_root_index = TileIndex::index_containing(tile.first_sample_time(), tile.last_sample_time());
     fprintf(stderr, "Moving root tile to %s\n", ti.to_string().c_str());
   }
   
@@ -225,22 +243,9 @@ TileIndex Channel::split_tile_if_needed(TileIndex ti, Tile &tile) {
   child_indexes[1]= ti.right_child();
 
   double split_time = ti.right_child().start_time();
-  size_t split_index;
-  //fprintf(stderr, "split_index = 0, tile.double_samples[split_index].time = %g, split_time = %g\n",
-  //        tile.double_samples[0].time, split_time);
-  for (split_index = 0;
-       split_index < tile.double_samples.size() && tile.double_samples[split_index].time < split_time;
-       split_index++) {
-    //fprintf(stderr, "split_index = %zd, tile.double_samples[split_index].time = %g, split_time = %g\n",
-    //split_index, tile.double_samples[split_index].time, split_time);
-  }
-  //fprintf(stderr, "split_index is %zd\n", split_index);
-  children[0].insert_double_samples(&tile.double_samples[0], &tile.double_samples[split_index]);
-  children[1].insert_double_samples(&tile.double_samples[split_index], &tile.double_samples[tile.double_samples.size()]);
-  //fprintf(stderr, "Splitting %zd samples at time %g into (%zd, %zd) samples\n",
-  //        tile.double_samples.size(), split_time,
-  //        children[0].double_samples.size(),  children[1].double_samples.size());
-  
+  split_samples(tile.double_samples, split_time, children[0], children[1]);
+  split_samples(tile.string_samples, split_time, children[0], children[1]);
+
   for (int i = 0; i < 2; i++) {
     assert(!has_tile(child_indexes[i]));
     assert(split_tile_if_needed(child_indexes[i], children[i]) == TileIndex::null());
@@ -250,37 +255,49 @@ TileIndex Channel::split_tile_if_needed(TileIndex ti, Tile &tile) {
   return new_root_index;
 }
 
-void Channel::create_parent_tile_from_children(TileIndex parent_index, Tile &parent, Tile children[]) {
-  // Subsample the children to create the parent
-  // when do we want to show original values?
-  // when do we want to do a real low-pass filter?
-  // do we need to filter more than just the child tiles? e.g. gaussian beyond the tile border
 
-  unsigned n_samples = BT_CHANNEL_DOUBLE_SAMPLES; // TODO: compute this number instead of hardcoding
-  std::vector<DataAccumulator<double> > bins(n_samples);
+template <class T>
+void combine_samples(unsigned int n_samples,
+                     TileIndex parent_index,
+                     std::vector<DataSample<T> > &parent,
+                     const std::vector<DataSample<T> > &left_child,
+                     const std::vector<DataSample<T> > &right_child)
+{
+  std::vector<DataAccumulator<T> > bins(n_samples);
+
+  const std::vector<DataSample<T> > *children[2];
+  children[0]=&left_child; children[1]=&right_child;
   
   for (unsigned j = 0; j < 2; j++) {
-    Tile &child = children[j];
-    for (unsigned i = 0; i < child.double_samples.size(); i++) {
+    const std::vector<DataSample<T> > &child = *children[j];
+    for (unsigned i = 0; i < child.size(); i++) {
       // Version 1: bin samples into correct bin
       // Version 2: try gaussian or lanczos(1) or 1/4 3/4 3/4 1/4
-      // TODO: use DataAccumulator
       
-      DataSample<double> &sample = child.double_samples[i];
+      const DataSample<T> &sample = child[i];
       assert(parent_index.contains_time(sample.time));
       unsigned bin = floor(parent_index.position(sample.time) * n_samples);
       assert(bin < n_samples);
       bins[bin] += sample;
     }
   }
-
-  parent.double_samples.clear();
+  
+  parent.clear();
   for (unsigned i = 0; i < bins.size(); i++) {
     if (bins[i].weight > 0) {
-      parent.double_samples.push_back(bins[i].get_sample());
+      parent.push_back(bins[i].get_sample());
     }
   }
-  assert(parent.binary_length() <= m_max_tile_size);
+}
+
+void Channel::create_parent_tile_from_children(TileIndex parent_index, Tile &parent, Tile children[]) {
+  // Subsample the children to create the parent
+  // when do we want to show original values?
+  // when do we want to do a real low-pass filter?
+  // do we need to filter more than just the child tiles? e.g. gaussian beyond the tile border
+
+  combine_samples(BT_CHANNEL_DOUBLE_SAMPLES, parent_index, children[0].double_samples, children[1].double_samples, parent.double_samples);
+  combine_samples(BT_CHANNEL_STRING_SAMPLES, parent_index, children[0].string_samples, children[1].string_samples, parent.string_samples);
 }
 
 void Channel::move_root_upwards(TileIndex new_root_index, TileIndex old_root_index) {

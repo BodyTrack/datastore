@@ -15,7 +15,7 @@ int main(int argc, char **argv)
   t1.double_samples.push_back(DataSample<double>(2.22, 555.555));
   
   t1.to_binary(binary);
-  assert(binary.length() == 4 + 4 + 4 + 24*2);
+  assert(binary.length() == 4 + 4 + 4 + 24*2 + 4 + 4);
   t2.from_binary(binary);
   assert(t2.header.magic == Tile::MAGIC);
   assert(t2.header.version == 0x00010000);

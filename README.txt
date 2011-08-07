@@ -1,3 +1,7 @@
+TODO is in TODO.txt
+
+-----
+
 Installing on OS X:
   Please install boost using macports:
     sudo port install boost

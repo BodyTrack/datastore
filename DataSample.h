@@ -1,13 +1,16 @@
 #ifndef INCLUDE_DATA_SAMPLE_H
 #define INCLUDE_DATA_SAMPLE_H
 
+// C++
+#include <string>
+
 template <class V>
 struct DataSample {
   DataSample(double time_init, V value_init, float weight_init, float variance_init) :
     time(time_init), value(value_init), weight(weight_init),  variance(variance) {}
   DataSample(double time_init, V value_init) :
     time(time_init), value(value_init), weight(1),  variance(0) {}
-  DataSample() : time(0), value(0), weight(1), variance(0) {}
+  DataSample() : time(0), value(V()), weight(1), variance(0) {}
   double time;
   V value;
   float weight;
@@ -22,12 +25,10 @@ struct DataSample {
 
 template <class V>
 struct DataAccumulator {
-  DataAccumulator() : time(0), value(0), weight(0), variance(0) {}
-
-  DataAccumulator &operator+=(DataSample<V> &x) {
-    time += x.time * x.weight;
-    value += x.value * x.weight;
-    weight += x.weight;
+  DataAccumulator() : time(0), value(V()), weight(0), variance(0) {}
+  
+  DataAccumulator &operator+=(const DataSample<V> &x) {
+    plus_equals(*this, x);
     // TODO: variance
     //http://www.emathzone.com/tutorials/basic-statistics/combined-variance.html
     //# Neither tp1 nor tp2 are nil, combine them
@@ -44,14 +45,40 @@ struct DataAccumulator {
   }
 
   DataSample<V> get_sample() const {
-    return DataSample<V>(time/weight, value/weight, weight, variance/weight);
+    DataSample<V> ret;
+    get(*this, ret);
+    return ret;
   }
 
   double time;
   V value;
   float weight;
   float variance;
-};
-  
-#endif
 
+private:
+    static void plus_equals(DataAccumulator<double> &lhs, const DataSample<double> &rhs) {
+    lhs.time += rhs.time * rhs.weight;
+    lhs.value += rhs.value * rhs.weight;
+    lhs.weight += rhs.weight;
+  }
+  
+  static void plus_equals(DataAccumulator<std::string> &lhs, const DataSample<std::string> &rhs) {
+    lhs.time += rhs.time * rhs.weight;
+    if (lhs.weight==0) {
+      lhs.value=rhs.value;
+    } else if (lhs.value != rhs.value) {
+      lhs.value="<multiple>"; // TODO: should we do some hashing to speed keyword search?
+    }
+    lhs.weight += rhs.weight;
+  }
+
+  static void get(const DataAccumulator<double> &a, DataSample<double> &ret) {
+    ret = DataSample<double>(a.time/a.weight, a.value/a.weight, a.weight, a.variance/a.weight);
+  }
+
+  static void get(const DataAccumulator<std::string> &a, DataSample<std::string> &ret) {
+    ret = DataSample<std::string>(a.time/a.weight, a.value, a.weight, a.variance/a.weight);
+  }
+};
+
+#endif

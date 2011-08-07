@@ -4,6 +4,7 @@
 #include <string.h>
 
 // C++
+#include <limits>
 #include <map>
 #include <stdexcept>
 #include <string>
@@ -366,8 +367,8 @@ void parse_bt_file(const std::string &infile,
                    std::vector<ParseError> &errors,
 		   ParseInfo &info)
 {
-  info.min_time = 1.0/0.0;
-  info.max_time = -1.0/0.0;
+  info.min_time = std::numeric_limits<double>::max();
+  info.max_time = -std::numeric_limits<double>::max();
   info.good_records = 0;
   info.bad_records = 0;
   double begintime = doubletime();
@@ -448,10 +449,10 @@ void parse_bt_file(const std::string &infile,
 	    info.min_time = std::min(info.min_time, data_samples.front().time);
 	    info.max_time = std::max(info.max_time, data_samples.back().time);
 	    double min_value = 
-	      info.channel_specs[channel_name]["min_value"].isNull() ? +1.0/0.0 :
+	      info.channel_specs[channel_name]["min_value"].isNull() ? +std::numeric_limits<double>::max() :
 	      info.channel_specs[channel_name]["min_value"].asDouble();
 	    double max_value = 
-	      info.channel_specs[channel_name]["max_value"].isNull() ? -1.0/0.0 :
+	      info.channel_specs[channel_name]["max_value"].isNull() ? -std::numeric_limits<double>::max() :
 	      info.channel_specs[channel_name]["max_value"].asDouble();
 	    for (unsigned i = 0; i < data_samples.size(); i++) {
 	      min_value = std::min(min_value, data_samples[i].value);

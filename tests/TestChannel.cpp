@@ -53,6 +53,27 @@ void test_subsampling(KVS &kvs)
   assert(fabs(total_weight - num_samples) < 1e-10);
 }
 
+void test_subsampling_string(KVS &kvs)
+{
+  Channel ch(kvs, 2, "a.d.string");
+  size_t num_samples=100000;
+  std::vector<DataSample<std::string> > data(num_samples);
+  for (size_t i = 0; i < num_samples; i++) {
+    data[i] = DataSample<std::string>(i+1, "foo bar barf yoyodyne lalalala");
+  }
+  ch.add_data(data);
+  // Fetch top-level tile
+  Tile tile;
+  assert(ch.read_tile(TileIndex(17, 0), tile));
+  double total_weight = 0;
+  for (size_t i = 0; i < tile.string_samples.size(); i++) {
+    DataSample<std::string> &sample = tile.string_samples[i];
+    total_weight += sample.weight;
+    assert(sample.value == "foo bar barf yoyodyne lalalala");
+  }
+  assert(fabs(total_weight - num_samples) < 1e-10);
+}
+
 void test_samples_multiple_tiles(Channel &ch, double begin_time, size_t num_samples)
 {
   fprintf(stderr, "test_samples_multiple_tiles(%zd):\n", num_samples);
@@ -110,33 +131,69 @@ int main(int argc, char **argv) {
   // Test paths
   assert(ch.tile_key(TileIndex(3,4)) == "2.a.b.3.4");
   
-  // Test read / write tile
+  // Test read / write double samples to tile
 
-  Tile t1, t2;
-  t1.header.magic = Tile::MAGIC;
-  t1.header.version = 0x00010000;
-  t1.double_samples.push_back(DataSample<double>(1.11, 333.333));
-  t1.double_samples.push_back(DataSample<double>(2.22, 555.555));
-  
-  assert(!ch.read_tile(TileIndex(10,20), t2));
-  assert(!ch.has_tile(TileIndex(10,20)));
-  assert(!ch.read_tile(TileIndex(10,21), t2));
-  assert(!ch.has_tile(TileIndex(10,21)));
-  ch.write_tile(TileIndex(10,20), t1);
-  assert(ch.read_tile(TileIndex(10,20), t2));
-  assert(ch.has_tile(TileIndex(10,20)));
-  
-  assert(t2.header.magic == Tile::MAGIC);
-  assert(t2.header.version == 0x00010000);
-  assert(t2.double_samples.size() == 2);
-  assert(t2.double_samples[0] == DataSample<double>(1.11, 333.333));
-  assert(t2.double_samples[1] == DataSample<double>(2.22, 555.555));
+  {
+    Tile t1, t2;
+    t1.header.magic = Tile::MAGIC;
+    t1.header.version = 0x00010000;
+    t1.double_samples.push_back(DataSample<double>(1.11, 333.333));
+    t1.double_samples.push_back(DataSample<double>(2.22, 555.555));
+    
+    assert(!ch.read_tile(TileIndex(10,20), t2));
+    assert(!ch.has_tile(TileIndex(10,20)));
+    assert(!ch.read_tile(TileIndex(10,21), t2));
+    assert(!ch.has_tile(TileIndex(10,21)));
+    ch.write_tile(TileIndex(10,20), t1);
+    assert(ch.read_tile(TileIndex(10,20), t2));
+    assert(ch.has_tile(TileIndex(10,20)));
+    
+    assert(t2.header.magic == Tile::MAGIC);
+    assert(t2.header.version == 0x00010000);
+    assert(t2.double_samples.size() == 2);
+    assert(t2.string_samples.size() == 0);
+    assert(t2.double_samples[0] == DataSample<double>(1.11, 333.333));
+    assert(t2.double_samples[1] == DataSample<double>(2.22, 555.555));
+    
+    ch.delete_tile(TileIndex(10,20));
+    assert(!ch.read_tile(TileIndex(10,20), t2));
+    assert(!ch.has_tile(TileIndex(10,20)));
+    assert(!ch.read_tile(TileIndex(10,21), t2));
+    assert(!ch.has_tile(TileIndex(10,21)));
+  }
 
-  ch.delete_tile(TileIndex(10,20));
-  assert(!ch.read_tile(TileIndex(10,20), t2));
-  assert(!ch.has_tile(TileIndex(10,20)));
-  assert(!ch.read_tile(TileIndex(10,21), t2));
-  assert(!ch.has_tile(TileIndex(10,21)));
+  // Test read / write string samples to a tile
+
+  {
+    Tile t1, t2;
+    t1.header.magic = Tile::MAGIC;
+    t1.header.version = 0x00010000;
+    t1.string_samples.push_back(DataSample<std::string>(1.11, "abc"));
+    t1.string_samples.push_back(DataSample<std::string>(2.22, "defghi"));
+    
+    assert(!ch.read_tile(TileIndex(10,20), t2));
+    assert(!ch.has_tile(TileIndex(10,20)));
+    assert(!ch.read_tile(TileIndex(10,21), t2));
+    assert(!ch.has_tile(TileIndex(10,21)));
+    ch.write_tile(TileIndex(10,20), t1);
+    assert(ch.read_tile(TileIndex(10,20), t2));
+    assert(ch.has_tile(TileIndex(10,20)));
+    
+    assert(t2.header.magic == Tile::MAGIC);
+    assert(t2.header.version == 0x00010000);
+    assert(t2.double_samples.size() == 0);
+    assert(t2.string_samples.size() == 2);
+    assert(t2.string_samples[0] == DataSample<std::string>(1.11, "abc"));
+    assert(t2.string_samples[1] == DataSample<std::string>(2.22, "defghi"));
+    
+    ch.delete_tile(TileIndex(10,20));
+    assert(!ch.read_tile(TileIndex(10,20), t2));
+    assert(!ch.has_tile(TileIndex(10,20)));
+    assert(!ch.read_tile(TileIndex(10,21), t2));
+    assert(!ch.has_tile(TileIndex(10,21)));
+  }
+
+
 
   Channel ch2(kvs, 2, "a.c");
 
@@ -149,10 +206,11 @@ int main(int argc, char **argv) {
   test_samples_multiple_tiles(ch2, 1309780800.0, 100000);
   test_samples_multiple_tiles(ch2, 1309780800.0, 100000);
   test_samples_multiple_tiles(ch2, 1309780800.0, 110000);
-  test_samples_multiple_tiles(ch2, 1309780800.0, 1000000);
+  //test_samples_multiple_tiles(ch2, 1309780800.0, 1000000);
   //test_samples_multiple_tiles(ch2, 1309780800.0, 3000000);
   
   test_subsampling(kvs);
+  test_subsampling_string(kvs);
 
   fprintf(stderr, "Tests succeeded\n");
   return 0;
