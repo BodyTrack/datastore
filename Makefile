@@ -15,7 +15,7 @@ INCLUDES=mysql_common.h MysqlQuery.h Tile.h Channel.h Logrec.h
 
 all: import gettile
 
-test: test-import
+test: test-import-bt test-import-json
 	make -C tests
 
 clean:
