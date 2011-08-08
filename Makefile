@@ -44,14 +44,16 @@ export: export.cpp Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
 test-import-bt: import export
+	rm -rf foo.kvs
 	mkdir -p foo.kvs
 	./import foo.kvs 1 ar-basestation bt/ar_basestation/4cfcff7d.bt
 	./export foo.kvs 1 ar-basestation.Humidity
-	./export foo.kvs 1 ar-basestation.Microphone
+	./export foo.kvs 1 ar-basestation.Microphone | tail
 	./export foo.kvs 1 ar-basestation.Pressure
 	./export foo.kvs 1 ar-basestation.Temperature
 
 test-import-json: import export
+	rm -rf foo.kvs
 	mkdir -p foo.kvs
 	./import foo.kvs 1 rphone testdata/json_import20110805-4317-1pzfs94-0.json
 	./export foo.kvs 1 rphone.accuracy

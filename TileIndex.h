@@ -84,7 +84,12 @@ struct TileIndex {
     assert(0);
   }
 
-  std::string to_string() const { return string_printf("%d.%lld", level, offset); }
+  std::string to_string() const {
+    if (is_null()) return "[null]";
+    if (is_nonnegative_all()) return "[nonnegative_all]";
+    if (is_negative_all()) return "[negative_all]";
+    return string_printf("%d.%lld", level, offset);
+  }
 
   static TileIndex tile_containing(double time, int level) {
     assert(0); // TODO: change this to index_at_level_containing

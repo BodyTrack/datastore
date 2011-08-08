@@ -34,6 +34,8 @@ bool Channel::read_info(ChannelInfo &info) const {
     assert(info_str.length() == sizeof(ChannelInfo));
     memcpy((void*)&info, (void*)info_str.c_str(), sizeof(info));
     assert(info.magic == ChannelInfo::MAGIC);
+    //fprintf(stderr, "read_info channel=%s root=%s\n", m_name.c_str(),
+    //        info.nonnegative_root_tile_index.to_string().c_str());
     return true;
   } else {
     return false;
@@ -44,8 +46,11 @@ bool Channel::read_info(ChannelInfo &info) const {
 /// \param  info New metainformation for channel
 /// Creates channel in KVS if it doesn't already exist
 void Channel::write_info(const ChannelInfo &info) {
+  assert(!info.nonnegative_root_tile_index.is_null());
   std::string info_str((char*)&info, (char*)((&info)+1));
   m_kvs.set(metainfo_key(), info_str);
+  //fprintf(stderr, "write_info channel=%s root=%s\n", m_name.c_str(),
+  //        info.nonnegative_root_tile_index.to_string().c_str());
 }
 
 bool Channel::has_tile(TileIndex ti) const {
@@ -361,7 +366,7 @@ void Channel::read_bottommost_tiles_in_range(double min_time, double max_time,
   TileIndex ti = TileIndex::null();
   while (time < max_time) {
     if (ti.is_null()) {
-      ti = find_lowest_child_overlapping_time(ti, min_time);
+      ti = find_lowest_child_overlapping_time(info.nonnegative_root_tile_index, min_time);
     } else {
       ti = find_lowest_successive_tile(ti);
     }
@@ -375,7 +380,9 @@ void Channel::read_bottommost_tiles_in_range(double min_time, double max_time,
 
 
 TileIndex Channel::find_lowest_child_overlapping_time(TileIndex ti, double t) const {
+  assert(!ti.is_null());
   // Start at root tile and move downwards
+  TileIndex orig = ti;
 
   while (1) {
     // Select correct child
@@ -385,11 +392,14 @@ TileIndex Channel::find_lowest_child_overlapping_time(TileIndex ti, double t) co
     ti = child;
   }
 
+  //fprintf(stderr, "find_lowest_child_overlapping_time(%s,%g)->%s\n",
+  //        ti.to_string().c_str(), t, ti.to_string().c_str());
   return ti;
 }
 
 TileIndex Channel::find_lowest_successive_tile(TileIndex ti) const {
   // Move upwards until parent has a different end time
+  TileIndex orig = ti;
   while (1) {
     if (ti.parent().is_null()) return TileIndex::null();
     if (ti.parent().end_time() != ti.end_time()) break;
@@ -398,6 +408,8 @@ TileIndex Channel::find_lowest_successive_tile(TileIndex ti) const {
 
   // We are now the left child of our parent;  skip to the right child
   ti = ti.sibling();
+  //fprintf(stderr, "find_lowest_successive_tile(%s): cousin is %s\n",
+  //        orig.to_string().c_str(), ti.to_string().c_str());
 
   return find_lowest_child_overlapping_time(ti, ti.start_time());
 }
