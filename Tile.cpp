@@ -1,6 +1,7 @@
 // System
 #include <assert.h>
 #include <string.h>
+#include <limits>
 
 // Local
 #include "utils.h"
