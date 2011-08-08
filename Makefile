@@ -13,7 +13,7 @@ SQL_LDFLAGS = -L/usr/local/mysql/lib -lmysqlclient
 SOURCES=tilegen.cpp mysql_common.cpp MysqlQuery.cpp Channel.cpp Logrec.cpp Tile.cpp utils.cpp
 INCLUDES=mysql_common.h MysqlQuery.h Tile.h Channel.h Logrec.h
 
-all: import gettile
+all: export import gettile
 
 test: test-import
 	make -C tests
@@ -40,13 +40,27 @@ test-gettile:
 import:	import.cpp ImportBT.cpp ImportJson.cpp Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0/libs/libjson_libmt.a
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
-test-import-bt: import
+export: export.cpp Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0/libs/libjson_libmt.a
+	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
+
+test-import-bt: import export
 	mkdir -p foo.kvs
 	./import foo.kvs 1 ar-basestation bt/ar_basestation/4cfcff7d.bt
+	./export foo.kvs 1 ar-basestation.Humidity
+	./export foo.kvs 1 ar-basestation.Microphone
+	./export foo.kvs 1 ar-basestation.Pressure
+	./export foo.kvs 1 ar-basestation.Temperature
 
-test-import-json: import
+test-import-json: import export
 	mkdir -p foo.kvs
-	./import foo.kvs 1 ar-basestation testdata/json_import20110805-4317-1pzfs94-0.json
+	./import foo.kvs 1 rphone testdata/json_import20110805-4317-1pzfs94-0.json
+	./export foo.kvs 1 rphone.accuracy
+	./export foo.kvs 1 rphone.altitude
+	./export foo.kvs 1 rphone.bearing
+	./export foo.kvs 1 rphone.latitude
+	./export foo.kvs 1 rphone.longitude
+	./export foo.kvs 1 rphone.speed
+	./export foo.kvs 1 rphone.provider
 
 docs:
 	doxygen KVS.cpp KVS.h

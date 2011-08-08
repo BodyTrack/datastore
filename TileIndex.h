@@ -42,6 +42,10 @@ struct TileIndex {
     return level == INT_MAX && offset == -1;
   }
 
+  bool is_all() const {
+    return level == INT_MAX;
+  }
+
   bool is_null() const {
     return level == INT_MIN && offset == 0;
   }
@@ -125,18 +129,21 @@ struct TileIndex {
   /// Return parent
   /// \return parent of TileIndex
   TileIndex parent() const {
+    if (is_all()) return null();
     return TileIndex(level+1, offset>>1);
   }
 
   /// Return left child
   /// \return left child of TileIndex
   TileIndex left_child() const {
+    if (is_all()) return null();
     return TileIndex(level-1, offset*2);
   }
 
   /// Return right child
   /// \return right child of TileIndex
   TileIndex right_child() const {
+    if (is_all()) return null();
     return TileIndex(level-1, offset*2+1);
   }
 

@@ -348,19 +348,58 @@ bool Channel::read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, 
   return true;
 }
 
+// TODO: do this without locking?
+void Channel::read_bottommost_tiles_in_range(double min_time, double max_time,
+                                             bool (*callback)(const Tile &t, double min_time, double max_time)) const {
+  Locker lock(*this);
+
+  ChannelInfo info;
+  bool success = read_info(info);
+  if (!success) return;
+
+  double time = min_time;
+  TileIndex ti = TileIndex::null();
+  while (time < max_time) {
+    if (ti.is_null()) {
+      ti = find_lowest_child_overlapping_time(ti, min_time);
+    } else {
+      ti = find_lowest_successive_tile(ti);
+    }
+    if (ti.is_null() || ti.start_time() >= max_time) break;
+
+    Tile t;
+    assert(read_tile(ti, t));
+    if (!(*callback)(t, min_time, max_time)) break;
+  }
+}
+
+
 TileIndex Channel::find_lowest_child_overlapping_time(TileIndex ti, double t) const {
   // Start at root tile and move downwards
-  // There are no children of an "all" tile
-  if (ti.is_nonnegative_all() || ti.is_negative_all()) return ti;
 
   while (1) {
     // Select correct child
     TileIndex child = t < ti.left_child().end_time() ? ti.left_child() : ti.right_child();
-    if (!tile_exists(child)) break;
+    
+    if (child.is_null() || !tile_exists(child)) break;
     ti = child;
   }
 
   return ti;
+}
+
+TileIndex Channel::find_lowest_successive_tile(TileIndex ti) const {
+  // Move upwards until parent has a different end time
+  while (1) {
+    if (ti.parent().is_null()) return TileIndex::null();
+    if (ti.parent().end_time() != ti.end_time()) break;
+    ti = ti.parent();
+  }
+
+  // We are now the left child of our parent;  skip to the right child
+  ti = ti.sibling();
+
+  return find_lowest_child_overlapping_time(ti, ti.start_time());
 }
 
 std::string Channel::dump_tile_summaries() const {

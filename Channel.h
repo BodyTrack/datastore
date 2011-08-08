@@ -61,6 +61,7 @@ public:
   std::string dump_tile_summaries() const;
 
   bool read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, Tile &ret) const;
+  void read_bottommost_tiles_in_range(double min_time, double max_time, bool (*callback)(const Tile &t, double min_time, double max_time)) const;
 
 private:
   KVS &m_kvs;
@@ -73,6 +74,8 @@ private:
   std::string metainfo_key() const;
 
   TileIndex find_lowest_child_overlapping_time(TileIndex ti, double t) const;
+  TileIndex find_lowest_successive_tile(TileIndex ti) const;
+  
   TileIndex split_tile_if_needed(TileIndex ti, Tile &tile);
   void create_parent_tile_from_children(TileIndex ti, Tile &parent, Tile children[]);
   void move_root_upwards(TileIndex new_root, TileIndex old_root);

@@ -1,5 +1,5 @@
-test strings
-figure out string summarization
+DONE test strings
+DONE figure out string summarization
 check on multiple simultaneous writes
 
 PDR receiver
