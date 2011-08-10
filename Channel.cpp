@@ -328,7 +328,10 @@ bool Channel::read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, 
   Locker lock(*this);  // Lock self and hold lock until exiting this method
   ChannelInfo info;
   bool success = read_info(info);
-  if (!success) return false;
+  if (!success) {
+    fprintf(stderr, "read_tile_or_closest_ancestor: can't read info\n");
+    return false;
+  }
   TileIndex root = info.nonnegative_root_tile_index;
 
   if (ti.is_ancestor_of(root)) {
