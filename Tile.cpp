@@ -250,3 +250,13 @@ double Tile::last_sample_time() const
   if (string_samples.size()) ret = std::max(ret, string_samples.back().time);
   return ret;
 }
+
+std::string Tile::summary() const
+{
+  double doubles_weight = 0, strings_weight = 0;
+  for (unsigned i = 0; i < double_samples.size(); i++) doubles_weight += double_samples[i].weight;
+  for (unsigned i = 0; i < string_samples.size(); i++) strings_weight += string_samples[i].weight;
+  return string_printf("[ndoubles %zd weight %f; nstrings %zd weight %f]", 
+		       double_samples.size(), doubles_weight,
+		       string_samples.size(), strings_weight);
+}

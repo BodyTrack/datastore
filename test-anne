@@ -1,0 +1,124 @@
+#!/bin/sh
+
+rm -rf anne.kvs; mkdir anne.kvs
+./import anne.kvs 1 A_Cheststrap testdata/4e386a43.bt
+echo -n "GETTILE "
+./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/345.bt
+echo -n "GETTILE "
+./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/346.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/347.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/348.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/349.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/350.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/351.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/352.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/353.bt
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/354.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/355.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/356.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/357.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/358.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/359.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/360.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/368.bt
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/369.bt
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1210.bt
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1211.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1212.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1213.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1214.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1215.bt
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1216.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1217.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1218.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1219.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1220.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1221.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1222.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1223.bt
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1224.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1225.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1226.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1227.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1228.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1229.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
+# ./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/1230.bt 
+# echo -n "GETTILE "
+# ./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc

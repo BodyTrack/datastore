@@ -6,6 +6,7 @@
 #include <string.h>
 
 // Local
+#include "Log.h"
 #include "TileIndex.h"
 #include "utils.h"
 
@@ -20,7 +21,13 @@ Channel::Channel(KVS &kvs, int owner_id, const std::string &name, size_t max_til
 
 /// Lock channel upon construction; if currently locked, construction will block until lock is available
 /// \param ch        Channel to lock
-Channel::Locker::Locker(const Channel &ch) : m_ch(ch), m_locker(ch.m_kvs, ch.metainfo_key()) {}
+Channel::Locker::Locker(const Channel &ch) : m_ch(ch), m_locker(ch.m_kvs, ch.metainfo_key()) {
+  log_f("Channel: locking %s", ch.descriptor().c_str());
+}
+
+Channel::Locker::~Locker() {
+  log_f("Channel: unlocking %s", m_ch.descriptor().c_str());
+}
 
 /// Read channel metainformation from KVS
 /// \param  info Returns metainformation, if read
@@ -34,8 +41,7 @@ bool Channel::read_info(ChannelInfo &info) const {
     assert(info_str.length() == sizeof(ChannelInfo));
     memcpy((void*)&info, (void*)info_str.c_str(), sizeof(info));
     assert(info.magic == ChannelInfo::MAGIC);
-    //fprintf(stderr, "read_info channel=%s root=%s\n", m_name.c_str(),
-    //        info.nonnegative_root_tile_index.to_string().c_str());
+    log_f("Channel: read_info %s: root tile=%s", descriptor().c_str(), info.nonnegative_root_tile_index.to_string().c_str());
     return true;
   } else {
     return false;
@@ -49,8 +55,7 @@ void Channel::write_info(const ChannelInfo &info) {
   assert(!info.nonnegative_root_tile_index.is_null());
   std::string info_str((char*)&info, (char*)((&info)+1));
   m_kvs.set(metainfo_key(), info_str);
-  //fprintf(stderr, "write_info channel=%s root=%s\n", m_name.c_str(),
-  //        info.nonnegative_root_tile_index.to_string().c_str());
+  log_f("Channel: write_info %s : root tile=%s", descriptor().c_str(), info.nonnegative_root_tile_index.to_string().c_str());
 }
 
 bool Channel::has_tile(TileIndex ti) const {
@@ -61,6 +66,8 @@ bool Channel::read_tile(TileIndex ti, Tile &tile) const {
   std::string binary;
   if (!m_kvs.get(tile_key(ti), binary)) return false;
   tile.from_binary(binary);
+  log_f("Channel: read_tile %s %s: %s\n", 
+	descriptor().c_str(), ti.to_string().c_str(), tile.summary().c_str());
   return true;
 }
 
@@ -69,10 +76,14 @@ void Channel::write_tile(TileIndex ti, const Tile &tile) {
   tile.to_binary(binary);
   //assert(binary.size() <= m_max_tile_size);
   m_kvs.set(tile_key(ti), binary);
+  log_f("Channel: write_tile %s %s: %s\n", 
+	descriptor().c_str(), ti.to_string().c_str(), tile.summary().c_str());
 }
 
 bool Channel::delete_tile(TileIndex ti) {
   return m_kvs.del(tile_key(ti));
+  log_f("Channel: delete_tile %s %s\n", 
+	descriptor().c_str(), ti.to_string().c_str());
 }
 
 void Channel::create_tile(TileIndex ti) {
@@ -379,6 +390,10 @@ void Channel::read_bottommost_tiles_in_range(double min_time, double max_time,
     assert(read_tile(ti, t));
     if (!(*callback)(t, min_time, max_time)) break;
   }
+}
+
+std::string Channel::descriptor() const {
+  return string_printf("%d/%s", m_owner_id, m_name.c_str());
 }
 
 TileIndex Channel::find_lowest_child_overlapping_time(TileIndex ti, double t) const {

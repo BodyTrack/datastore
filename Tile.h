@@ -30,6 +30,7 @@ class Tile {
   void insert_samples(const DataSample<std::string> *begin, const DataSample<std::string> *end);
   double first_sample_time() const;
   double last_sample_time() const;
+  std::string summary() const;
 private:
   size_t double_samples_length() const;
   size_t string_samples_length() const;

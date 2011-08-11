@@ -30,17 +30,26 @@ install-local: gettile import
 jsoncpp-src-0.5.0/libs/libjson_libmt.a:
 	(cd jsoncpp-src-0.5.0 && python scons.py platform=linux-gcc && cd libs && ln -sf linux*/*.a libjson_libmt.a)
 
-gettile: gettile.cpp Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0/libs/libjson_libmt.a
+gettile: gettile.cpp Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0/libs/libjson_libmt.a
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
 test-gettile:
 	mkdir -p foo.kvs
 	./gettile /home/bodytrack/projects/bodytrack/website/db/dev.kvs 1 A_Home_Desk.Temperature 0 2560569
 
-import:	import.cpp ImportBT.cpp ImportJson.cpp Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0/libs/libjson_libmt.a
+test-annebug: import gettile
+	rm -rf anne.kvs
+	mkdir anne.kvs
+	./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/4e386a43.bt
+	./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125
+	./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/345.bt
+	./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125
+
+
+import:	import.cpp ImportBT.cpp ImportJson.cpp Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0/libs/libjson_libmt.a
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
-export: export.cpp Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0/libs/libjson_libmt.a
+export: export.cpp Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0/libs/libjson_libmt.a
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
 test-import-bt: import export

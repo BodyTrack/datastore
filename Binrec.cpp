@@ -473,9 +473,9 @@ void parse_bt_file(const std::string &infile,
               data[channel_name] = boost::shared_ptr<std::vector<DataSample<double> > >(new std::vector<DataSample<double> >());
             } else {
               if (data[channel_name]->back().time > data_samples.front().time) {
-                fprintf(stderr, "Warning: sample times in channel %s are out-of-order (%f > %f)\n",
-                        channel_name.c_str(),
-                        data[channel_name]->back().time, data_samples.front().time);
+                //fprintf(stderr, "Warning: sample times in channel %s are out-of-order (%f > %f)\n",
+                //        channel_name.c_str(),
+                //        data[channel_name]->back().time, data_samples.front().time);
                 out_of_order = true;
               }
             }

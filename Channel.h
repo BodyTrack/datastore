@@ -35,6 +35,7 @@ public:
   class Locker {
   public:
     Locker(const Channel &ch);
+    ~Locker();
   private:
     const Channel &m_ch;
     KVSLocker m_locker;
@@ -62,6 +63,8 @@ public:
 
   bool read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, Tile &ret) const;
   void read_bottommost_tiles_in_range(double min_time, double max_time, bool (*callback)(const Tile &t, double min_time, double max_time)) const;
+
+  std::string descriptor() const;
 
 private:
   KVS &m_kvs;
