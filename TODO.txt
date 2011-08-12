@@ -1,6 +1,6 @@
 DONE test strings
 DONE figure out string summarization
-check on multiple simultaneous writes
+DONE check on multiple simultaneous writes
 
 PDR receiver
 

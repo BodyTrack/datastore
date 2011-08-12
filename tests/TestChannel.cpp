@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// BOOST
+#include <boost/thread/thread.hpp>
+
 // Local
 #include "FilesystemKVS.h"
 
@@ -53,6 +56,7 @@ void test_subsampling(KVS &kvs)
   assert(fabs(total_weight - num_samples) < 1e-10);
 }
 
+
 void test_subsampling_string(KVS &kvs)
 {
   Channel ch(kvs, 2, "a.d.string");
@@ -95,6 +99,46 @@ void test_samples_multiple_tiles(Channel &ch, double begin_time, size_t num_samp
   }
   assert(data == read_data);
   fprintf(stderr, "test_samples_multiple_tiles(%zd) succeeded\n", num_samples);
+}
+
+void test_add_data_thread(std::vector<DataSample<double> > data)
+{
+  FilesystemKVS kvs("channelstore_test.kvs");
+  Channel ch(kvs, 2, "threadtest");
+  ch.add_data(data);
+}
+
+void test_subsampling_threads()
+{
+  int nthreads = 100;
+  int samples_per_thread = 1000;
+  std::vector<boost::thread*> threads;
+  for (int thread = 0; thread < nthreads; thread++) {
+    std::vector<DataSample<double> > data(samples_per_thread);
+    for (int i = 0; i < samples_per_thread; i++) {
+      data[i] = DataSample<double>(i+thread*samples_per_thread, 33);
+    }
+    threads.push_back(new boost::thread(test_add_data_thread, data));
+  }
+  for (unsigned int i=0; i<threads.size(); i++) {
+    threads[i]->join();
+    delete threads[i];
+  }
+  
+  // Fetch top-level tile
+  Tile tile;
+  FilesystemKVS kvs("channelstore_test.kvs");
+  Channel ch(kvs, 2, "threadtest");
+  
+  assert(ch.read_tile(TileIndex(17, 0), tile));
+  double total_weight = 0;
+  for (size_t i = 0; i < tile.double_samples.size(); i++) {
+    DataSample<double> &sample = tile.double_samples[i];
+    assert(fabs(sample.value - 33) < 1e-10);
+    total_weight += sample.weight;
+  }
+  int num_samples = nthreads * samples_per_thread;
+  assert(fabs(total_weight - num_samples) < 1e-10);
 }
 
 int main(int argc, char **argv) {
@@ -211,6 +255,8 @@ int main(int argc, char **argv) {
   
   test_subsampling(kvs);
   test_subsampling_string(kvs);
+
+  test_subsampling_threads();
 
   fprintf(stderr, "Tests succeeded\n");
   return 0;
