@@ -41,9 +41,9 @@ test-annebug: import gettile
 	rm -rf anne.kvs
 	mkdir anne.kvs
 	./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/4e386a43.bt
-	./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125
+	./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
 	./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/345.bt
-	./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125
+	./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
 
 
 import:	import.cpp ImportBT.cpp ImportJson.cpp Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0/libs/libjson_libmt.a

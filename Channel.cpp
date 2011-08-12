@@ -66,7 +66,7 @@ bool Channel::read_tile(TileIndex ti, Tile &tile) const {
   std::string binary;
   if (!m_kvs.get(tile_key(ti), binary)) return false;
   tile.from_binary(binary);
-  log_f("Channel: read_tile %s %s: %s\n", 
+  log_f("Channel: read_tile %s %s: %s", 
 	descriptor().c_str(), ti.to_string().c_str(), tile.summary().c_str());
   return true;
 }
@@ -76,13 +76,13 @@ void Channel::write_tile(TileIndex ti, const Tile &tile) {
   tile.to_binary(binary);
   //assert(binary.size() <= m_max_tile_size);
   m_kvs.set(tile_key(ti), binary);
-  log_f("Channel: write_tile %s %s: %s\n", 
+  log_f("Channel: write_tile %s %s: %s", 
 	descriptor().c_str(), ti.to_string().c_str(), tile.summary().c_str());
 }
 
 bool Channel::delete_tile(TileIndex ti) {
   return m_kvs.del(tile_key(ti));
-  log_f("Channel: delete_tile %s %s\n", 
+  log_f("Channel: delete_tile %s %s", 
 	descriptor().c_str(), ti.to_string().c_str());
 }
 
@@ -159,7 +159,9 @@ void Channel::add_data_internal(const std::vector<DataSample<T> > &data) {
     TileIndex new_root = split_tile_if_needed(ti, tile);
     if (new_root != TileIndex::null()) {
       assert(ti == TileIndex::nonnegative_all());
-      fprintf(stderr, "Changing root from %s to %s\n", ti.to_string().c_str(), new_root.to_string().c_str());
+      log_f("Channel: %s changing root from %s to %s\n",
+            descriptor().c_str(), ti.to_string().c_str(),
+            new_root.to_string().c_str());
       info.nonnegative_root_tile_index = new_root;
       delete_tile(ti); // Delete old root
       ti = new_root;
@@ -283,7 +285,8 @@ void combine_samples(unsigned int n_samples,
 
   const std::vector<DataSample<T> > *children[2];
   children[0]=&left_child; children[1]=&right_child;
-  
+
+  int n=0;
   for (unsigned j = 0; j < 2; j++) {
     const std::vector<DataSample<T> > &child = *children[j];
     for (unsigned i = 0; i < child.size(); i++) {
@@ -294,16 +297,25 @@ void combine_samples(unsigned int n_samples,
       assert(parent_index.contains_time(sample.time));
       unsigned bin = floor(parent_index.position(sample.time) * n_samples);
       assert(bin < n_samples);
+      n++;
       bins[bin] += sample;
+      assert(bins[bin].weight>0);
     }
   }
-  
+
+  n = 0;
+  int m=0;
   parent.clear();
   for (unsigned i = 0; i < bins.size(); i++) {
     if (bins[i].weight > 0) {
       parent.push_back(bins[i].get_sample());
+      assert(parent.size());
+      n++;
+    } else {
+      m++;
     }
   }
+  if (left_child.size() || right_child.size()) assert(parent.size());
 }
 
 void Channel::create_parent_tile_from_children(TileIndex parent_index, Tile &parent, Tile children[]) {
@@ -311,9 +323,16 @@ void Channel::create_parent_tile_from_children(TileIndex parent_index, Tile &par
   // when do we want to show original values?
   // when do we want to do a real low-pass filter?
   // do we need to filter more than just the child tiles? e.g. gaussian beyond the tile border
+  log_f("Channel: creating parent %s from children %s, %s",
+        parent_index.to_string().c_str(),
+        parent_index.left_child().to_string().c_str(),
+        parent_index.right_child().to_string().c_str());
 
-  combine_samples(BT_CHANNEL_DOUBLE_SAMPLES, parent_index, children[0].double_samples, children[1].double_samples, parent.double_samples);
-  combine_samples(BT_CHANNEL_STRING_SAMPLES, parent_index, children[0].string_samples, children[1].string_samples, parent.string_samples);
+  combine_samples(BT_CHANNEL_DOUBLE_SAMPLES, parent_index, parent.double_samples, children[0].double_samples, children[1].double_samples);
+  if (children[0].double_samples.size() + children[1].double_samples.size()) assert(parent.double_samples.size());
+
+  combine_samples(BT_CHANNEL_STRING_SAMPLES, parent_index, parent.string_samples, children[0].string_samples, children[1].string_samples);
+  if (children[0].string_samples.size() + children[1].string_samples.size()) assert(parent.string_samples.size());
 }
 
 void Channel::move_root_upwards(TileIndex new_root_index, TileIndex old_root_index) {
