@@ -13,13 +13,15 @@ SQL_LDFLAGS = -L/usr/local/mysql/lib -lmysqlclient
 SOURCES=tilegen.cpp mysql_common.cpp MysqlQuery.cpp Channel.cpp Logrec.cpp Tile.cpp utils.cpp
 INCLUDES=mysql_common.h MysqlQuery.h Tile.h Channel.h Logrec.h
 
-all: export import gettile
+ALL=export import gettile
+
+all: $(ALL)
 
 test: test-import-bt test-import-json
 	make -C tests
 
 clean:
-	rm -f import gettile
+	rm -f $(ALL)
 
 ARCH:=$(shell uname -s -m | sed 's/ /_/' | tr 'A-Z' 'a-z')
 

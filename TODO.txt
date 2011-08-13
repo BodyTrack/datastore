@@ -1,3 +1,11 @@
+test variance
+fix variance
+add tile summaries:
+  min time, max time, min val, max val
+return tile summaries
+
+
+
 DONE test strings
 DONE figure out string summarization
 DONE check on multiple simultaneous writes
