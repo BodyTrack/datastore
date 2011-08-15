@@ -5,10 +5,14 @@
 #include <string>
 #include <stdarg.h>
 
+// C
+#include <math.h>
+
 std::string string_vprintf(const char *fmt, va_list args);
 std::string string_printf(const char *fmt, ...);
 bool filename_exists(const std::string &filename);
 #define tassert(expr) ((expr)?0:(printf("%s:%u: failed tassert '%s'\n", __FILE__, __LINE__, #expr), abort(), 0))
+#define tassert_approx_equals(a,b) (fabs((a)-(b))<1e-5?0:(printf("%s:%u: tassert_approx_equals %g != %g\n", __FILE__, __LINE__, (double)(a), (double)(b)), abort(), 0))
 unsigned long long microtime();
 unsigned long long millitime();
 double doubletime();

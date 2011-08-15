@@ -19,7 +19,7 @@ void decompose_string_samples(const std::vector<DataSample<std::string> > &sampl
     indexes[i].time = samples[i].time;
     indexes[i].value = index;
     indexes[i].weight = samples[i].weight;
-    indexes[i].variance = samples[i].variance;
+    indexes[i].stddev = samples[i].stddev;
     index += samples[i].value.length();
   }
   text = "";
@@ -41,7 +41,7 @@ void compose_string_samples(const std::vector<DataSample<boost::uint32_t> > &ind
     boost::uint32_t end = i+1 < samples.size() ? indexes[i+1].value : text.length();
     samples[i].value = text.substr(begin, end-begin);
     samples[i].weight = indexes[i].weight;
-    samples[i].variance = indexes[i].variance;
+    samples[i].stddev = indexes[i].stddev;
   }
 };
 

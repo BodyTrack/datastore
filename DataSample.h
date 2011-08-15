@@ -1,22 +1,25 @@
 #ifndef INCLUDE_DATA_SAMPLE_H
 #define INCLUDE_DATA_SAMPLE_H
 
+// C
+#include <math.h>
+
 // C++
 #include <string>
 
 template <class V>
 struct DataSample {
-  DataSample(double time_init, V value_init, float weight_init, float variance_init) :
-    time(time_init), value(value_init), weight(weight_init),  variance(variance) {}
+  DataSample(double time_init, V value_init, float weight_init, float stddev_init) :
+    time(time_init), value(value_init), weight(weight_init),  stddev(stddev_init) {}
   DataSample(double time_init, V value_init) :
-    time(time_init), value(value_init), weight(1),  variance(0) {}
-  DataSample() : time(0), value(V()), weight(1), variance(0) {}
+    time(time_init), value(value_init), weight(1),  stddev(0) {}
+  DataSample() : time(0), value(V()), weight(1), stddev(0) {}
   double time;
   V value;
   float weight;
-  float variance;
+  float stddev;
   bool operator==(const DataSample<V> &rhs) const {
-    return time == rhs.time && value == rhs.value && weight == rhs.weight && variance == rhs.variance;
+    return time == rhs.time && value == rhs.value && weight == rhs.weight && stddev == rhs.stddev;
   }
   static bool time_lessthan(const DataSample<V> &a, const DataSample<V> &b) {
     return a.time < b.time;
@@ -25,22 +28,15 @@ struct DataSample {
 
 template <class V>
 struct DataAccumulator {
-  DataAccumulator() : time(0), value(V()), weight(0), variance(0) {}
-  
+  DataAccumulator() : timesum(0), sum(V()), sumsq(V()), weight(0) {}
+
+  DataAccumulator &operator+=(const DataAccumulator<V> &x) {
+    plus_equals(*this, x);
+    return *this;
+  }
+
   DataAccumulator &operator+=(const DataSample<V> &x) {
     plus_equals(*this, x);
-    // TODO: variance
-    //http://www.emathzone.com/tutorials/basic-statistics/combined-variance.html
-    //# Neither tp1 nor tp2 are nil, combine them
-    //total_count = tp1.count + tp2.count
-    //ave_time = ((tp1.time*tp1.count) + (tp2.time*tp2.count))/total_count
-    //ave_mean = ((tp1.mean*tp1.count) + (tp2.mean*tp2.count))/total_count
-    //
-    //# Calculating combined "stddev" based on formulae at 
-    //# http://www.emathzone.com/tutorials/basic-statistics/combined-variance.html
-    //sc_2 = (tp1.count*(tp1.stderr + (tp1.mean - ave_mean)**2) + 
-    //        tp2.count*(tp2.stderr + (tp2.mean - ave_mean)**2))/total_count
-    //return(TilePoint.new(ave_time, ave_mean, Math.sqrt(sc_2), total_count))
     return *this;
   }
 
@@ -50,34 +46,51 @@ struct DataAccumulator {
     return ret;
   }
 
-  double time;
-  V value;
-  float weight;
-  float variance;
+  double timesum;
+  V sum;
+  V sumsq;
+  double weight;
 
 private:
-    static void plus_equals(DataAccumulator<double> &lhs, const DataSample<double> &rhs) {
-    lhs.time += rhs.time * rhs.weight;
-    lhs.value += rhs.value * rhs.weight;
+  static void plus_equals(DataAccumulator<double> &lhs, const DataAccumulator<double> &rhs) {
+    lhs.timesum += rhs.timesum;
+    lhs.sum += rhs.sum;
+    lhs.sumsq += rhs.sumsq;
+    lhs.weight += rhs.weight;
+  }
+  
+  static void plus_equals(DataAccumulator<double> &lhs, const DataSample<double> &rhs) {
+    if (rhs.weight == 0) return;
+    lhs.timesum += rhs.time * rhs.weight;
+    lhs.sum += rhs.value * rhs.weight;
+    
+    // variance = sumsq/weight - mean^2
+    // sumsq/weight = variance + mean^2
+    // sumsq = weight*variance + sum*mean = weight(variance + mean*mean) = weight(stddev*stddev + mean*mean)
+    double rhs_sumsq = rhs.weight * (rhs.stddev * rhs.stddev + rhs.value * rhs.value);
+    
+    lhs.sumsq += rhs_sumsq;
     lhs.weight += rhs.weight;
   }
   
   static void plus_equals(DataAccumulator<std::string> &lhs, const DataSample<std::string> &rhs) {
-    lhs.time += rhs.time * rhs.weight;
+    lhs.timesum += rhs.time * rhs.weight;
     if (lhs.weight==0) {
-      lhs.value=rhs.value;
-    } else if (lhs.value != rhs.value) {
-      lhs.value="<multiple>"; // TODO: should we do some hashing to speed keyword search?
+      lhs.sum=rhs.value;
+    } else if (lhs.sum != rhs.value) {
+      lhs.sum="<multiple>"; // TODO: should we do some hashing to speed keyword search?
     }
     lhs.weight += rhs.weight;
   }
 
   static void get(const DataAccumulator<double> &a, DataSample<double> &ret) {
-    ret = DataSample<double>(a.time/a.weight, a.value/a.weight, a.weight, a.variance/a.weight);
+    double mean = a.sum/a.weight;
+    double variance = a.sumsq/a.weight - mean*mean;
+    ret = DataSample<double>(a.timesum/a.weight, mean, a.weight, sqrt(variance));
   }
-
+  
   static void get(const DataAccumulator<std::string> &a, DataSample<std::string> &ret) {
-    ret = DataSample<std::string>(a.time/a.weight, a.value, a.weight, a.variance/a.weight);
+    ret = DataSample<std::string>(a.timesum/a.weight, a.sum, a.weight, 0);
   }
 };
 

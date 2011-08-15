@@ -46,14 +46,42 @@ void test_subsampling(KVS &kvs)
   ch.add_data(data);
   // Fetch top-level tile
   Tile tile;
-  assert(ch.read_tile(TileIndex(17, 0), tile));
-  double total_weight = 0;
+  tassert(ch.read_tile(TileIndex(17, 0), tile));
+
+  DataAccumulator<double> a;
+  
   for (size_t i = 0; i < tile.double_samples.size(); i++) {
-    DataSample<double> &sample = tile.double_samples[i];
-    assert(fabs(sample.value - 33) < 1e-10);
-    total_weight += sample.weight;
+    a += tile.double_samples[i];
+    tassert(fabs(tile.double_samples[i].value - 33) < 1e-10);
   }
-  assert(fabs(total_weight - num_samples) < 1e-10);
+  tassert_approx_equals(a.get_sample().time, 100001*.5);
+  tassert_approx_equals(a.get_sample().weight, num_samples);
+  tassert_approx_equals(a.get_sample().value, 33);
+  tassert_approx_equals(a.get_sample().stddev, 0);
+}
+
+void test_subsampling_stddev(KVS &kvs)
+{
+  Channel ch(kvs, 2, "a.d.stddev");
+  size_t num_samples=100000;
+  std::vector<DataSample<double> > data(num_samples);
+  for (size_t i = 0; i < num_samples; i++) {
+    data[i] = DataSample<double>(i+1, i%10);
+  }
+  ch.add_data(data);
+  // Fetch top-level tile
+  Tile tile;
+  tassert(ch.read_tile(TileIndex(17, 0), tile));
+
+  DataAccumulator<double> a;
+  
+  for (size_t i = 0; i < tile.double_samples.size(); i++) {
+    a += tile.double_samples[i];
+  }
+  tassert_approx_equals(a.get_sample().time, 100001*.5);
+  tassert_approx_equals(a.get_sample().weight, num_samples);
+  tassert_approx_equals(a.get_sample().value, 4.5);
+  tassert_approx_equals(a.get_sample().stddev, sqrt(33.0)/2.0);
 }
 
 
@@ -131,14 +159,17 @@ void test_subsampling_threads()
   Channel ch(kvs, 2, "threadtest");
   
   assert(ch.read_tile(TileIndex(17, 0), tile));
-  double total_weight = 0;
+
+  DataAccumulator<double> a;
+  
   for (size_t i = 0; i < tile.double_samples.size(); i++) {
-    DataSample<double> &sample = tile.double_samples[i];
-    assert(fabs(sample.value - 33) < 1e-10);
-    total_weight += sample.weight;
+    a += tile.double_samples[i];
+    tassert(fabs(tile.double_samples[i].value - 33) < 1e-10);
   }
-  int num_samples = nthreads * samples_per_thread;
-  assert(fabs(total_weight - num_samples) < 1e-10);
+  tassert_approx_equals(a.get_sample().time, 99999*.5);
+  tassert_approx_equals(a.get_sample().weight, nthreads * samples_per_thread);
+  tassert_approx_equals(a.get_sample().value, 33);
+  tassert_approx_equals(a.get_sample().stddev, 0);
 }
 
 int main(int argc, char **argv) {
@@ -254,6 +285,7 @@ int main(int argc, char **argv) {
   //test_samples_multiple_tiles(ch2, 1309780800.0, 3000000);
   
   test_subsampling(kvs);
+  test_subsampling_stddev(kvs);
   test_subsampling_string(kvs);
 
   test_subsampling_threads();
