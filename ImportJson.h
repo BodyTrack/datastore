@@ -8,6 +8,10 @@
 #include "KVS.h"
 #include "Parse.h"
 
-void import_json_file(KVS &store, const std::string &bt_file, int uid, const std::string &dev_nickname, ParseInfo &info);
+void parse_json_file(const std::string &infile,
+		     std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > > &numeric_data,
+		     std::map<std::string, boost::shared_ptr<std::vector<DataSample<std::string> > > > &string_data,
+		     std::vector<ParseError> &errors,
+		     ParseInfo &info);
 
 #endif

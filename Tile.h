@@ -10,6 +10,7 @@
 
 // Local
 #include "DataSample.h"
+#include "Range.h"
 
 class Tile {
  public:
@@ -18,6 +19,7 @@ class Tile {
     boost::uint32_t magic;
     boost::uint32_t version;
   } header;
+  DataRanges ranges;
   enum {
     MAGIC = 0x69547442 // Magic('BtTi')
   };
@@ -31,6 +33,7 @@ class Tile {
   double first_sample_time() const;
   double last_sample_time() const;
   std::string summary() const;
+  
 private:
   size_t double_samples_length() const;
   size_t string_samples_length() const;

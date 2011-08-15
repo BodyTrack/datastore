@@ -91,12 +91,12 @@ void Channel::create_tile(TileIndex ti) {
   write_tile(ti, tile);
 }
 
-void Channel::add_data(const std::vector<DataSample<double> > &data) {
-  add_data_internal(data);
+void Channel::add_data(const std::vector<DataSample<double> > &data, DataRanges *channel_ranges) {
+  add_data_internal(data, channel_ranges);
 }
 
-void Channel::add_data(const std::vector<DataSample<std::string> > &data) {
-  add_data_internal(data);
+void Channel::add_data(const std::vector<DataSample<std::string> > &data, DataRanges *channel_ranges) {
+  add_data_internal(data, channel_ranges);
 }
 
 /// Add data to channel
@@ -104,7 +104,7 @@ void Channel::add_data(const std::vector<DataSample<std::string> > &data) {
 /// Locking:  This method acquires a lock to channel as needed to guarantee update is successful in an environment
 /// where multiple simultaneous updates are happening via add_data from multiple processes.
 template <class T>
-void Channel::add_data_internal(const std::vector<DataSample<T> > &data) {
+void Channel::add_data_internal(const std::vector<DataSample<T> > &data, DataRanges *channel_ranges) {
   if (!data.size()) return;
   // Sanity check
   if (data[0].time < 0) throw std::runtime_error("Unimplemented feature: adding data with negative time");
@@ -168,6 +168,7 @@ void Channel::add_data_internal(const std::vector<DataSample<T> > &data) {
     }
     //fprintf(stderr, "add_data: rewriting tile %s\n", ti.to_string().c_str());
     write_tile(ti, tile);
+    if (ti == info.nonnegative_root_tile_index && channel_ranges) { *channel_ranges = tile.ranges; }
     if (ti != info.nonnegative_root_tile_index) to_regenerate.insert(ti.parent());
   }
   
@@ -181,6 +182,7 @@ void Channel::add_data_internal(const std::vector<DataSample<T> > &data) {
     assert(read_tile(ti.right_child(), children[1]));
     create_parent_tile_from_children(ti, regenerated, children);
     write_tile(ti, regenerated);
+    if (ti == info.nonnegative_root_tile_index && channel_ranges) { *channel_ranges = regenerated.ranges; }
     if (ti != info.nonnegative_root_tile_index) to_regenerate.insert(ti.parent());
   }
   write_info(info);
@@ -333,6 +335,9 @@ void Channel::create_parent_tile_from_children(TileIndex parent_index, Tile &par
 
   combine_samples(BT_CHANNEL_STRING_SAMPLES, parent_index, parent.string_samples, children[0].string_samples, children[1].string_samples);
   if (children[0].string_samples.size() + children[1].string_samples.size()) assert(parent.string_samples.size());
+
+  parent.ranges = children[0].ranges;
+  parent.ranges.add(children[1].ranges);
 }
 
 void Channel::move_root_upwards(TileIndex new_root_index, TileIndex old_root_index) {

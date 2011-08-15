@@ -53,8 +53,8 @@ public:
   bool delete_tile(TileIndex ti);
   void create_tile(TileIndex ti);
   
-  void add_data(const std::vector<DataSample<double> > &data);
-  void add_data(const std::vector<DataSample<std::string> > &data);
+  void add_data(const std::vector<DataSample<double> > &data, DataRanges *channel_ranges = NULL);
+  void add_data(const std::vector<DataSample<std::string> > &data, DataRanges *channel_ranges = NULL);
   void read_data(std::vector<DataSample<double> > &data, double begin, double end) const;
   
   std::string tile_key(TileIndex ti) const;
@@ -83,7 +83,7 @@ private:
   void create_parent_tile_from_children(TileIndex ti, Tile &parent, Tile children[]);
   void move_root_upwards(TileIndex new_root, TileIndex old_root);
   template <class T>
-  void add_data_internal(const std::vector<DataSample<T> > &data);
+  void add_data_internal(const std::vector<DataSample<T> > &data, DataRanges *channel_ranges);
 };
 
 /// \class ChannelLocker Channel.h

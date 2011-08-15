@@ -7,6 +7,12 @@
 // C++
 #include <string>
 
+// JSON
+#include <json/json.h>
+
+// Local
+#include "Range.h"
+
 template <class V>
 struct DataSample {
   DataSample(double time_init, V value_init, float weight_init, float stddev_init) :
@@ -94,4 +100,29 @@ private:
   }
 };
 
+struct DataRanges {
+  Range times;
+  Range double_samples;
+  void clear() { times.clear(); double_samples.clear(); }
+  bool operator==(const DataRanges &rhs) const {
+    return times==rhs.times && double_samples==rhs.double_samples;
+  }
+  void add(const DataRanges &rhs) {
+    times.add(rhs.times);
+    double_samples.add(rhs.double_samples);
+  }
+  Json::Value to_json() const {
+    Json::Value ret(Json::objectValue);
+    if (!times.empty()) {
+      ret["min_time"] = Json::Value(times.min());
+      ret["max_time"] = Json::Value(times.max());
+    }
+    if (!double_samples.empty()) {
+      ret["min_value"] = Json::Value(double_samples.min());
+      ret["max_value"] = Json::Value(double_samples.max());
+    }
+    return ret;
+  }
+};
+  
 #endif

@@ -22,8 +22,6 @@ void parse_json_file(const std::string &infile,
 		     std::vector<ParseError> &errors,
 		     ParseInfo &info)
 {
-  info.min_time = std::numeric_limits<double>::max();
-  info.max_time = -std::numeric_limits<double>::max();
   info.good_records = 0;
   info.bad_records = 0;
 
@@ -55,8 +53,6 @@ void parse_json_file(const std::string &infile,
   for (unsigned i = 0; i < datajson.size(); i++) {
     Json::Value row = datajson[i];
     double timestamp = row[(unsigned int)0].asDouble();
-    info.min_time = std::min(info.min_time, timestamp);
-    info.max_time = std::max(info.max_time, timestamp);
     //fprintf(stderr, "%.6f %s\n", timestamp, rtrim(Json::FastWriter().write(row)).c_str());
     for (unsigned j = 1; j < row.size(); j++) {
       if (row[j].type() == Json::stringValue) {
@@ -73,54 +69,5 @@ void parse_json_file(const std::string &infile,
   }
   
   info.good_records = 1;
-}
-
-
-
-void import_json_file(KVS &store, const std::string &bt_file, int uid, const std::string &dev_nickname, ParseInfo &info)
-{
-  bool write_partial_on_errors = true;
-  std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > > numeric_data;
-  std::map<std::string, boost::shared_ptr<std::vector<DataSample<std::string> > > > string_data;
-  std::vector<ParseError> errors;
-
-  parse_json_file(bt_file, numeric_data, string_data, errors, info);
-  if (errors.size()) {
-    fprintf(stderr, "Parse errors:\n");
-    for (unsigned i = 0; i < errors.size(); i++) {
-      fprintf(stderr, "%s\n", errors[i].what());
-    }
-    if (!numeric_data.size() && !string_data.size()) {
-      fprintf(stderr, "No data returned\n");
-    } else if (!write_partial_on_errors) {
-      fprintf(stderr, "Partial data returned, but not adding to store\n");
-    } else {
-      fprintf(stderr, "Partial data returned;  adding to store\n");
-    }
-  }
-
-  for (std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > >::iterator i =
-         numeric_data.begin(); i != numeric_data.end(); ++i) {
-
-    std::string channel_name = i->first;
-    boost::shared_ptr<std::vector<DataSample<double> > > samples = i->second;
-
-    fprintf(stderr, "%.6f: %s %zd numeric samples\n", (*samples)[0].time, channel_name.c_str(), samples->size());
-    
-    Channel ch(store, uid, dev_nickname + "." + channel_name);
-    ch.add_data(*samples);
-  }  
-
-  for (std::map<std::string, boost::shared_ptr<std::vector<DataSample<std::string> > > >::iterator i =
-         string_data.begin(); i != string_data.end(); ++i) {
-
-    std::string channel_name = i->first;
-    boost::shared_ptr<std::vector<DataSample<std::string> > > samples = i->second;
-
-    fprintf(stderr, "%.6f: %s %zd textual samples\n", (*samples)[0].time, channel_name.c_str(), samples->size());
-    
-    Channel ch(store, uid, dev_nickname + "." + channel_name);
-    ch.add_data(*samples);
-  }  
 }
 

@@ -28,11 +28,11 @@ void test_samples_single_tile(Channel &ch, double begin_time, size_t num_samples
   Tile tile;
   {
     long long begin = millitime();
-    assert(ch.read_tile(TileIndex::nonnegative_all(), tile));
+    tassert(ch.read_tile(TileIndex::nonnegative_all(), tile));
     fprintf(stderr, "  read %zd samples in %lld msec\n", num_samples, millitime() - begin);
   }
 
-  assert(tile.double_samples == data);
+  tassert(tile.double_samples == data);
 }
 
 void test_subsampling(KVS &kvs)
@@ -58,6 +58,10 @@ void test_subsampling(KVS &kvs)
   tassert_approx_equals(a.get_sample().weight, num_samples);
   tassert_approx_equals(a.get_sample().value, 33);
   tassert_approx_equals(a.get_sample().stddev, 0);
+  tassert_equals(tile.ranges.times.min(), 1);
+  tassert_equals(tile.ranges.times.max(), 100000);
+  tassert_equals(tile.ranges.double_samples.min(), 33);
+  tassert_equals(tile.ranges.double_samples.max(), 33);
 }
 
 void test_subsampling_stddev(KVS &kvs)
@@ -82,6 +86,10 @@ void test_subsampling_stddev(KVS &kvs)
   tassert_approx_equals(a.get_sample().weight, num_samples);
   tassert_approx_equals(a.get_sample().value, 4.5);
   tassert_approx_equals(a.get_sample().stddev, sqrt(33.0)/2.0);
+  tassert_equals(tile.ranges.times.min(), 1);
+  tassert_equals(tile.ranges.times.max(), 100000);
+  tassert_equals(tile.ranges.double_samples.min(), 0);
+  tassert_equals(tile.ranges.double_samples.max(), 9);
 }
 
 
@@ -96,14 +104,17 @@ void test_subsampling_string(KVS &kvs)
   ch.add_data(data);
   // Fetch top-level tile
   Tile tile;
-  assert(ch.read_tile(TileIndex(17, 0), tile));
+  tassert(ch.read_tile(TileIndex(17, 0), tile));
   double total_weight = 0;
   for (size_t i = 0; i < tile.string_samples.size(); i++) {
     DataSample<std::string> &sample = tile.string_samples[i];
     total_weight += sample.weight;
-    assert(sample.value == "foo bar barf yoyodyne lalalala");
+    tassert(sample.value == "foo bar barf yoyodyne lalalala");
   }
-  assert(fabs(total_weight - num_samples) < 1e-10);
+  tassert_approx_equals(total_weight, num_samples);
+  tassert_equals(tile.ranges.times.min(), 1);
+  tassert_equals(tile.ranges.times.max(), 100000);
+  tassert(tile.ranges.double_samples.empty());
 }
 
 void test_samples_multiple_tiles(Channel &ch, double begin_time, size_t num_samples)
@@ -125,7 +136,7 @@ void test_samples_multiple_tiles(Channel &ch, double begin_time, size_t num_samp
     ch.read_data(read_data, data[0].time, data.back().time+1);
     fprintf(stderr, "  read %zd samples in %lld msec\n", num_samples, millitime() - begin);
   }
-  assert(data == read_data);
+  tassert(data == read_data);
   fprintf(stderr, "test_samples_multiple_tiles(%zd) succeeded\n", num_samples);
 }
 
@@ -158,7 +169,7 @@ void test_subsampling_threads()
   FilesystemKVS kvs("channelstore_test.kvs");
   Channel ch(kvs, 2, "threadtest");
   
-  assert(ch.read_tile(TileIndex(17, 0), tile));
+  tassert(ch.read_tile(TileIndex(17, 0), tile));
 
   DataAccumulator<double> a;
   
@@ -184,27 +195,31 @@ int main(int argc, char **argv) {
   }
 
   // Test ChannelInfo
-  
-  ChannelInfo info;
-  assert(!ch.read_info(info));
-  info.magic = ChannelInfo::MAGIC;
-  info.version = 0x00010000;
-  info.min_time = 1;
-  info.max_time = 2;
-  info.nonnegative_root_tile_index = TileIndex::nonnegative_all();
-  info.negative_root_tile_index = TileIndex::negative_all();
-  ch.write_info(info);
-  ChannelInfo info2;
-  assert(ch.read_info(info2));
-  assert(info.magic == ChannelInfo::MAGIC);
-  assert(info.version == 0x00010000);
-  assert(info.min_time == 1);
-  assert(info.max_time == 2);
-  assert(info.nonnegative_root_tile_index == info.nonnegative_root_tile_index);
-  assert(info.negative_root_tile_index == info.negative_root_tile_index);
+
+  {
+    ChannelInfo info;
+    tassert(!ch.read_info(info));
+    info.magic = ChannelInfo::MAGIC;
+    info.version = 0x00010000;
+    info.min_time = 1;
+    info.max_time = 2;
+    info.nonnegative_root_tile_index = TileIndex::nonnegative_all();
+    info.negative_root_tile_index = TileIndex::negative_all();
+    ch.write_info(info);
+  }
+  {
+    ChannelInfo info2;
+    tassert(ch.read_info(info2));
+    tassert_equals(info2.magic, ChannelInfo::MAGIC);
+    tassert_equals(info2.version, 0x00010000);
+    tassert_equals(info2.min_time, 1);
+    tassert_equals(info2.max_time, 2);
+    tassert(info2.nonnegative_root_tile_index == TileIndex::nonnegative_all());
+    tassert(info2.negative_root_tile_index == TileIndex::negative_all());
+  }
 
   // Test paths
-  assert(ch.tile_key(TileIndex(3,4)) == "2.a.b.3.4");
+  tassert(ch.tile_key(TileIndex(3,4)) == "2.a.b.3.4");
   
   // Test read / write double samples to tile
 
@@ -215,26 +230,26 @@ int main(int argc, char **argv) {
     t1.double_samples.push_back(DataSample<double>(1.11, 333.333));
     t1.double_samples.push_back(DataSample<double>(2.22, 555.555));
     
-    assert(!ch.read_tile(TileIndex(10,20), t2));
-    assert(!ch.has_tile(TileIndex(10,20)));
-    assert(!ch.read_tile(TileIndex(10,21), t2));
-    assert(!ch.has_tile(TileIndex(10,21)));
+    tassert(!ch.read_tile(TileIndex(10,20), t2));
+    tassert(!ch.has_tile(TileIndex(10,20)));
+    tassert(!ch.read_tile(TileIndex(10,21), t2));
+    tassert(!ch.has_tile(TileIndex(10,21)));
     ch.write_tile(TileIndex(10,20), t1);
-    assert(ch.read_tile(TileIndex(10,20), t2));
-    assert(ch.has_tile(TileIndex(10,20)));
+    tassert(ch.read_tile(TileIndex(10,20), t2));
+    tassert(ch.has_tile(TileIndex(10,20)));
     
-    assert(t2.header.magic == Tile::MAGIC);
-    assert(t2.header.version == 0x00010000);
-    assert(t2.double_samples.size() == 2);
-    assert(t2.string_samples.size() == 0);
-    assert(t2.double_samples[0] == DataSample<double>(1.11, 333.333));
-    assert(t2.double_samples[1] == DataSample<double>(2.22, 555.555));
+    tassert_equals(t2.header.magic, Tile::MAGIC);
+    tassert_equals(t2.header.version, 0x00010000);
+    tassert_equals(t2.double_samples.size(), 2);
+    tassert_equals(t2.string_samples.size(), 0);
+    tassert(t2.double_samples[0] == DataSample<double>(1.11, 333.333));
+    tassert(t2.double_samples[1] == DataSample<double>(2.22, 555.555));
     
     ch.delete_tile(TileIndex(10,20));
-    assert(!ch.read_tile(TileIndex(10,20), t2));
-    assert(!ch.has_tile(TileIndex(10,20)));
-    assert(!ch.read_tile(TileIndex(10,21), t2));
-    assert(!ch.has_tile(TileIndex(10,21)));
+    tassert(!ch.read_tile(TileIndex(10,20), t2));
+    tassert(!ch.has_tile(TileIndex(10,20)));
+    tassert(!ch.read_tile(TileIndex(10,21), t2));
+    tassert(!ch.has_tile(TileIndex(10,21)));
   }
 
   // Test read / write string samples to a tile
@@ -246,26 +261,26 @@ int main(int argc, char **argv) {
     t1.string_samples.push_back(DataSample<std::string>(1.11, "abc"));
     t1.string_samples.push_back(DataSample<std::string>(2.22, "defghi"));
     
-    assert(!ch.read_tile(TileIndex(10,20), t2));
-    assert(!ch.has_tile(TileIndex(10,20)));
-    assert(!ch.read_tile(TileIndex(10,21), t2));
-    assert(!ch.has_tile(TileIndex(10,21)));
+    tassert(!ch.read_tile(TileIndex(10,20), t2));
+    tassert(!ch.has_tile(TileIndex(10,20)));
+    tassert(!ch.read_tile(TileIndex(10,21), t2));
+    tassert(!ch.has_tile(TileIndex(10,21)));
     ch.write_tile(TileIndex(10,20), t1);
-    assert(ch.read_tile(TileIndex(10,20), t2));
-    assert(ch.has_tile(TileIndex(10,20)));
+    tassert(ch.read_tile(TileIndex(10,20), t2));
+    tassert(ch.has_tile(TileIndex(10,20)));
     
-    assert(t2.header.magic == Tile::MAGIC);
-    assert(t2.header.version == 0x00010000);
-    assert(t2.double_samples.size() == 0);
-    assert(t2.string_samples.size() == 2);
-    assert(t2.string_samples[0] == DataSample<std::string>(1.11, "abc"));
-    assert(t2.string_samples[1] == DataSample<std::string>(2.22, "defghi"));
+    tassert_equals(t2.header.magic, Tile::MAGIC);
+    tassert_equals(t2.header.version, 0x00010000);
+    tassert_equals(t2.double_samples.size(), 0);
+    tassert_equals(t2.string_samples.size(), 2);
+    tassert(t2.string_samples[0] == DataSample<std::string>(1.11, "abc"));
+    tassert(t2.string_samples[1] == DataSample<std::string>(2.22, "defghi"));
     
     ch.delete_tile(TileIndex(10,20));
-    assert(!ch.read_tile(TileIndex(10,20), t2));
-    assert(!ch.has_tile(TileIndex(10,20)));
-    assert(!ch.read_tile(TileIndex(10,21), t2));
-    assert(!ch.has_tile(TileIndex(10,21)));
+    tassert(!ch.read_tile(TileIndex(10,20), t2));
+    tassert(!ch.has_tile(TileIndex(10,20)));
+    tassert(!ch.read_tile(TileIndex(10,21), t2));
+    tassert(!ch.has_tile(TileIndex(10,21)));
   }
 
 

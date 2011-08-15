@@ -8,3 +8,4 @@ TestTileIndex
 *.dSYM
 kvs.test
 TestDataSample
+TestBinaryIO

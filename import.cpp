@@ -11,6 +11,8 @@
 
 // Local
 #include "Binrec.h"
+#include "Channel.h"
+#include "DataSample.h"
 #include "FilesystemKVS.h"
 #include "ImportBT.h"
 #include "ImportJson.h"
@@ -52,34 +54,111 @@ int main(int argc, char **argv)
   FilesystemKVS store(storename.c_str());
 
 
+  bool write_partial_on_errors = true;
+  
   for (unsigned i = 0; i < files.size(); i++) {
     std::string filename = files[i];
     fprintf(stderr, "Importing %s into UID %d\n", filename.c_str(), uid);
     
     ParseInfo info;
+    std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > > numeric_data;
+    std::map<std::string, boost::shared_ptr<std::vector<DataSample<std::string> > > > string_data;
+    std::vector<ParseError> errors;
+    
+    //import_json_file(store, files[i], uid, dev_nickname, info);
+
     if (!strcasecmp(filename_suffix(filename).c_str(), "bt")) {
-      import_bt_file(store, files[i], uid, dev_nickname, info);
+      parse_bt_file(filename, numeric_data, errors, info);
     } else if (!strcasecmp(filename_suffix(filename).c_str(), "json")) {
-      import_json_file(store, files[i], uid, dev_nickname, info);
+      parse_json_file(filename, numeric_data, string_data, errors, info);
     } else {
       printf("{\"failure\":\"Unrecognized filename suffix %s\"}\n", filename_suffix(filename).c_str());
       continue;
     }
-    printf("{");
-    printf("\"successful_records\":%d", info.good_records);
-    printf(",");
-    printf("\"failed_records\":%d", info.bad_records);
-    if (!isinf(info.min_time)) {
-      printf(",");
-      printf("\"min_time\":%.9f", info.min_time);
+
+    if (errors.size()) {
+      fprintf(stderr, "Parse errors:\n");
+      for (unsigned i = 0; i < errors.size(); i++) {
+        fprintf(stderr, "%s\n", errors[i].what());
+      }
+      if (!numeric_data.size() && !string_data.size()) {
+        fprintf(stderr, "No data returned\n");
+      } else if (!write_partial_on_errors) {
+        fprintf(stderr, "Partial data returned, but not adding to store\n");
+      } else {
+        fprintf(stderr, "Partial data returned;  adding to store\n");
+      }
     }
-    if (!isinf(info.max_time)) {
-      printf(",");
-      printf("\"max_time\":%.9f", info.max_time);
+
+    std::map<std::string, DataRanges> import_ranges;
+    std::map<std::string, DataRanges> channel_ranges;
+    
+    for (std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > >::iterator i =
+           numeric_data.begin(); i != numeric_data.end(); ++i) {
+      
+      std::string channel_name = i->first;
+      boost::shared_ptr<std::vector<DataSample<double> > > samples = i->second;
+      
+      fprintf(stderr, "%.6f: %s %zd numeric samples\n", (*samples)[0].time, channel_name.c_str(), samples->size());
+      
+      Channel ch(store, uid, dev_nickname + "." + channel_name);
+
+      {
+        DataRanges cr;
+        ch.add_data(*samples, &cr);
+        if (!cr.times.empty()) channel_ranges[channel_name].add(cr);
+      }
+
+      {
+        DataRanges ir;
+        for (unsigned i = 0; i < samples->size(); i++) {
+          DataSample<double> &sample = (*samples)[i];
+          ir.times.add(sample.time);
+          ir.double_samples.add(sample.value);
+        }
+        import_ranges[channel_name].add(ir);
+      }
+    }  
+    
+    for (std::map<std::string, boost::shared_ptr<std::vector<DataSample<std::string> > > >::iterator i =
+           string_data.begin(); i != string_data.end(); ++i) {
+      
+      std::string channel_name = i->first;
+      boost::shared_ptr<std::vector<DataSample<std::string> > > samples = i->second;
+      
+      fprintf(stderr, "%.6f: %s %zd textual samples\n", (*samples)[0].time, channel_name.c_str(), samples->size());
+      
+      Channel ch(store, uid, dev_nickname + "." + channel_name);
+
+      {
+        DataRanges cr;
+        ch.add_data(*samples, &cr);
+        if (!cr.times.empty()) channel_ranges[channel_name].add(cr);
+      }
+
+      {
+        DataRanges ir;
+        for (unsigned i = 0; i < samples->size(); i++) {
+          DataSample<std::string> &sample = (*samples)[i];
+          ir.times.add(sample.time);
+        }
+        import_ranges[channel_name].add(ir);
+      }
     }
-    printf(",");
-    printf("\"channel_specs\":%s", rtrim(Json::FastWriter().write( info.channel_specs )).c_str());
-    printf("}\n");
+
+    for (std::map<std::string, DataRanges>::iterator i = import_ranges.begin(); i != import_ranges.end(); ++i) {
+      info.channel_specs[i->first]["imported_bounds"] = i->second.to_json();
+    }
+
+    for (std::map<std::string, DataRanges>::iterator i = channel_ranges.begin(); i != channel_ranges.end(); ++i) {
+      info.channel_specs[i->first]["channel_bounds"] = i->second.to_json();
+    }
+
+    Json::Value result(Json::objectValue);
+    result["successful_records"] = Json::Value(info.good_records);
+    result["failed_records"] = Json::Value(info.bad_records);
+    result["channel_specs"] = info.channel_specs;
+    printf("%s", rtrim(Json::FastWriter().write(result)).c_str());
   }
   fprintf(stderr, "Done\n");
   return 0;

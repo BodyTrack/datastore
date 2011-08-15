@@ -7,6 +7,9 @@
 // JSON
 #include <json/json.h>
 
+// Local
+#include "DataSample.h"
+
 class ParseError : public std::exception {
   std::string m_what;
 public:
@@ -16,8 +19,8 @@ public:
 };
 
 struct ParseInfo {
-  double min_time;
-  double max_time;
+  DataRanges imported_data;
+  DataRanges channel;
   int good_records;
   int bad_records;
   Json::Value channel_specs;
