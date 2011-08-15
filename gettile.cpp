@@ -130,7 +130,8 @@ int main(int argc, char **argv)
 	printf("[%f,-1e308,0,1],", 0.5*(samples[i].time+previous_sample_time));
       }
       previous_sample_time = samples[i].time;
-      printf("[%f,%g,%g,%g]", samples[i].time, samples[i].value, samples[i].stddev, samples[i].weight);
+      // TODO: fix so we never see NAN here!
+      printf("[%f,%g,%g,%g]", samples[i].time, samples[i].value, isnan(samples[i].stddev) ? 0 : samples[i].stddev, samples[i].weight);
     }
     if (client_tile_index.end_time() - previous_sample_time > line_break_threshold) {
       printf("[%f,-1e308,0,1],", 0.5*(previous_sample_time + client_tile_index.end_time()));

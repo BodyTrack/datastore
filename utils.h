@@ -7,6 +7,7 @@
 // C
 #include <math.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 std::string string_vprintf(const char *fmt, va_list args);

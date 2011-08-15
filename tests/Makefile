@@ -30,7 +30,7 @@ TestTile: TestTile.cpp BinaryIO.cpp BinaryIO.h Log.cpp Log.h Tile.cpp Tile.h uti
 TestChannel: TestChannel.cpp BinaryIO.cpp BinaryIO.h Channel.cpp Channel.h ChannelInfo.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h ../jsoncpp-src-0.5.0/libs/libjson_libmt.a
 	g++ $(CPPFLAGS) -Wall -g -I .. -I /opt/local/include -o $@ $^ $(LDFLAGS) || (rm $@ && exit 1)
 
-TestFilesystemKVS: TestFilesystemKVS.cpp FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h utils.cpp ../jsoncpp-src-0.5.0/libs/libjson_libmt.a
+TestFilesystemKVS: TestFilesystemKVS.cpp FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h utils.cpp Log.cpp Log.h ../jsoncpp-src-0.5.0/libs/libjson_libmt.a
 	g++ $(CPPFLAGS) -Wall -g -I .. -I /opt/local/include -o $@ $^ $(LDFLAGS)
 
 ../jsoncpp-src-0.5.0/libs/libjson_libmt.a:

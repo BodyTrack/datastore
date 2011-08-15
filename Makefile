@@ -10,8 +10,9 @@ endif
 SQL_CPPFLAGS = -I/usr/local/mysql/include 
 SQL_LDFLAGS = -L/usr/local/mysql/lib -lmysqlclient
 
-SOURCES=tilegen.cpp mysql_common.cpp MysqlQuery.cpp Channel.cpp Logrec.cpp Tile.cpp utils.cpp
+SOURCES=tilegen.cpp mysql_common.cpp MysqlQuery.cpp Channel.cpp Logrec.cpp Tile.cpp utils.cpp Log.cpp
 INCLUDES=mysql_common.h MysqlQuery.h Tile.h Channel.h Logrec.h
+INSTALL_BINS=export import gettile
 
 ALL=export import gettile
 
@@ -25,9 +26,20 @@ clean:
 
 ARCH:=$(shell uname -s -m | sed 's/ /_/' | tr 'A-Z' 'a-z')
 
-install-local: gettile import
+install-local: $(INSTALL_BINS)
 	mkdir -p ../website/lib/datastore/$(ARCH)
 	cp $^ ../website/lib/datastore/$(ARCH)
+
+install-static: $(INSTALL_BINS)
+	mkdir -p /u/apps/bodytrack/static/$(ARCH)
+	cp $^ /u/apps/bodytrack/static/$(ARCH)
+
+install-remote: $(INSTALL_BINS)
+	scp $^ bodytrack2:/u/apps/bodytrack/static/$(ARCH)
+
+install-deploy: $(INSTALL_BINS)
+	mkdir -p /u/apps/bodytrack/current/lib/datastore/$(ARCH)
+	cp $^ /u/apps/bodytrack/current/lib/datastore/$(ARCH)
 
 jsoncpp-src-0.5.0/libs/libjson_libmt.a:
 	(cd jsoncpp-src-0.5.0 && python scons.py platform=linux-gcc && cd libs && ln -sf linux*/*.a libjson_libmt.a)
@@ -82,7 +94,7 @@ TestFileBlock: TestFileBlock.cpp FileBlock.cpp FileBlock.h MappedFile.cpp Mapped
 	g++ -g $(CPPFLAGS) -o $@ $^
 	./$@
 
-read_bt: Binrec.cpp crc32.cpp DataStore.cpp utils.cpp jsoncpp-src-0.5.0/libs
+read_bt: Binrec.cpp crc32.cpp DataStore.cpp utils.cpp Log.cpp jsoncpp-src-0.5.0/libs
 	g++ -g $(CPPFLAGS) Binrec.cpp crc32.cpp DataStore.cpp utils.cpp -o $@  -L./jsoncpp-src-0.5.0/libs/linux-gcc -ljson_linux-gcc
 	./read_bt
 
