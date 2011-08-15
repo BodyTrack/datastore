@@ -92,6 +92,7 @@ int main(int argc, char **argv)
 
     std::map<std::string, DataRanges> import_ranges;
     std::map<std::string, DataRanges> channel_ranges;
+    Range import_time_range;
     
     for (std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > >::iterator i =
            numeric_data.begin(); i != numeric_data.end(); ++i) {
@@ -148,6 +149,7 @@ int main(int argc, char **argv)
 
     for (std::map<std::string, DataRanges>::iterator i = import_ranges.begin(); i != import_ranges.end(); ++i) {
       info.channel_specs[i->first]["imported_bounds"] = i->second.to_json();
+      import_time_range.add(i->second.times);
     }
 
     for (std::map<std::string, DataRanges>::iterator i = channel_ranges.begin(); i != channel_ranges.end(); ++i) {
@@ -157,6 +159,10 @@ int main(int argc, char **argv)
     Json::Value result(Json::objectValue);
     result["successful_records"] = Json::Value(info.good_records);
     result["failed_records"] = Json::Value(info.bad_records);
+    if (!import_time_range.empty()) {
+      result["min_time"] = Json::Value(import_time_range.min());
+      result["max_time"] = Json::Value(import_time_range.max());
+    }
     result["channel_specs"] = info.channel_specs;
     printf("%s", rtrim(Json::FastWriter().write(result)).c_str());
   }
