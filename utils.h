@@ -2,8 +2,10 @@
 #define UTILS_INCLUDE_H
 
 // C++
-#include <string>
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
 
 // C
 #include <math.h>
