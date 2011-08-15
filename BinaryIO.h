@@ -2,6 +2,7 @@
 #define INCLUDE_BINARYIO_H
 
 // C++
+#include <cstring>
 #include <string>
 #include <vector>
 

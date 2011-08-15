@@ -3,8 +3,8 @@
 
 // C++
 #include <algorithm>
+#include <limits>
 #include <stdexcept>
-
 
 // Local
 #include "utils.h"
