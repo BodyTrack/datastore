@@ -18,7 +18,7 @@ ALL=export import gettile
 
 all: $(ALL)
 
-test: test-import-bt test-import-json test-gettile
+test: test-import-bt test-import-json
 	make -C tests
 
 clean:
