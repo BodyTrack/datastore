@@ -23,23 +23,18 @@ void usage()
 {
   std::cerr << "Usage:\n";
   std::cerr << "import store.kvs uid device-nickname file1.bt ... fileN.bt\n";
-  std::cerr << "Exiting...\n";
-  exit(1);
+  throw std::runtime_error("Bad arguments");
 }
 
-int main(int argc, char **argv)
-{
+void emit_json(Json::Value &json) {
+  std::string response = rtrim(Json::FastWriter().write(json));
+  printf("%s\n", response.c_str());
+  log_f("import: sending: %s", response.c_str());
+}
+  
+int execute(int argc, char **argv) { 
   long long begin_time = millitime();
   char **argptr = argv+1;
-
-  {
-    std::string arglist;
-    for (int i = 0; i < argc; i++) {
-      if (i) arglist += " ";
-      arglist += std::string("'")+argv[i]+"'";
-    }
-    log_f("import START: %s", arglist.c_str());
-  }
 
   if (!*argptr) usage();
   std::string storename = *argptr++;
@@ -49,6 +44,15 @@ int main(int argc, char **argv)
   if (uid <= 0) usage();
   set_log_prefix(string_printf("%d %d ", getpid(), uid));
   
+  {
+    std::string arglist;
+    for (int i = 0; i < argc; i++) {
+      if (i) arglist += " ";
+      arglist += std::string("'")+argv[i]+"'";
+    }
+    log_f("import START: %s", arglist.c_str());
+  }
+
   if (!*argptr) usage();
   std::string dev_nickname = *argptr++;
 
@@ -87,10 +91,7 @@ int main(int argc, char **argv)
     } else if (!strcasecmp(filename_suffix(filename).c_str(), "json")) {
       parse_json_file(filename, numeric_data, string_data, errors, info);
     } else {
-      std::string msg = string_printf("{\"failure\":\"Unrecognized filename suffix %s\"}", filename_suffix(filename).c_str());
-      printf("%s\n", msg.c_str());
-      log_f("import: sending %s", msg.c_str());
-      continue;
+      throw std::runtime_error(string_printf("Unrecognized filename suffix '%s'", filename_suffix(filename).c_str()));
     }
 
     if (errors.size()) {
@@ -116,6 +117,7 @@ int main(int argc, char **argv)
       
       std::string channel_name = i->first;
       boost::shared_ptr<std::vector<DataSample<double> > > samples = i->second;
+      std::sort(samples->begin(), samples->end(), DataSample<double>::time_lessthan);
       
       log_f("import: %.6f: %s %zd numeric samples", (*samples)[0].time, channel_name.c_str(), samples->size());
       
@@ -143,6 +145,7 @@ int main(int argc, char **argv)
       
       std::string channel_name = i->first;
       boost::shared_ptr<std::vector<DataSample<std::string> > > samples = i->second;
+      std::sort(samples->begin(), samples->end(), DataSample<std::string>::time_lessthan);
       
       log_f("%.6f: %s %zd textual samples", (*samples)[0].time, channel_name.c_str(), samples->size());
       
@@ -181,10 +184,23 @@ int main(int argc, char **argv)
       result["max_time"] = Json::Value(import_time_range.max());
     }
     result["channel_specs"] = info.channel_specs;
-    std::string send = rtrim(Json::FastWriter().write(result));
-    printf("%s\n", send.c_str());
-    log_f("import: sending: %s", send.c_str());
+    emit_json(result);
   }
   log_f("import: finished in %lld msec", millitime() - begin_time);
   return 0;
 }
+
+int main(int argc, char **argv)
+{
+  int exit_code = 1;
+  try {
+    exit_code = execute(argc, argv);
+  } catch (const std::exception &e) {
+    log_f("import: caught exception '%s'", e.what());
+    Json::Value json_response(Json::objectValue);
+    json_response["failure"] = Json::Value(string_printf("exception: %s", e.what()));
+    emit_json(json_response);
+  }
+  return exit_code;
+}
+ 

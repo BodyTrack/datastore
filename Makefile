@@ -39,7 +39,7 @@ install-remote: $(INSTALL_BINS)
 
 install-deploy: $(INSTALL_BINS)
 	mkdir -p /u/apps/bodytrack/current/lib/datastore/$(ARCH)
-	cp $^ /u/apps/bodytrack/current/lib/datastore/$(ARCH)
+	rsync -a $^ /u/apps/bodytrack/current/lib/datastore/$(ARCH)
 
 jsoncpp-src-0.5.0/libs/libjson_libmt.a:
 	(cd jsoncpp-src-0.5.0 && python scons.py platform=linux-gcc && cd libs && ln -sf linux*/*.a libjson_libmt.a)
