@@ -20,8 +20,9 @@
 // Local
 #include "crc32.h"
 #include "DataSample.h"
-#include "utils.h"
 #include "KVS.h"
+#include "Log.h"
+#include "utils.h"
 
 // Self
 #include "Binrec.h"
@@ -125,7 +126,7 @@ StartOfFileRecord::StartOfFileRecord(const Source &source, const unsigned char *
     protocol_version = read_u16(ptr);
     time = TimeRecord(source, ptr);
     tick_period = read_u48(ptr);
-    if (verbose) fprintf(stderr, "Parsing SOFR:  tick_period is %llu\n", tick_period);
+    if (verbose) log_f("parse_bt_file: Parsing SOFR:  tick_period is %llu\n", tick_period);
     char *cptr = (char*) ptr, *end= (char*) payload+payload_len;
     if (end[-1] != 0) throw ParseError("At byte %d: DEVICE_PARAMS don't end with NUL", source.pos(end-1));
     while (cptr < end-1) {
@@ -139,7 +140,7 @@ StartOfFileRecord::StartOfFileRecord(const Source &source, const unsigned char *
       if (!cptr) throw ParseError("At byte %d: DEVICE_PARAMS missing newline", source.pos(valueptr));
       std::string value(valueptr, cptr);
       cptr++; // skip
-      if (verbose) fprintf(stderr, "  '%s'='%s'\n", key.c_str(), value.c_str());
+      if (verbose) log_f("parse_bt_file:   '%s'='%s'\n", key.c_str(), value.c_str());
       device_params[key] = value;
     }
     
@@ -155,12 +156,12 @@ StartOfFileRecord::StartOfFileRecord(const Source &source, const unsigned char *
       std::string units = get_channel_units(channel_names[i]);
       double scale = get_channel_scale(channel_names[i]);
       if (verbose)
-        fprintf(stderr, "  channel %d: '%s', units '%s', scale %g\n",
+        log_f("parse_bt_file:   channel %d: '%s', units '%s', scale %g\n",
                 i, channel_names[i].c_str(), units.c_str(), scale);
     }
   }
   catch (ParseError &e) {
-    throw ParseError("In RTYPE_START_OF_FILE payload starting at byte %d:\n%s", source.pos(payload), e.what());
+    throw ParseError("In RTYPE_START_OF_FILE payload starting at byte %d: %s", source.pos(payload), e.what());
   }
 }
 
@@ -178,7 +179,7 @@ double RtcRecord::seconds_since_1970() const {
 
 RtcRecord::RtcRecord(const Source &source, const unsigned char *payload, int payload_len) {
   if (payload_len != 13) {
-    throw ParseError("In RTYPE_RTC payload starting at byte %d, incorrect length (should be 13, is %d",
+    throw ParseError("In RTYPE_RTC payload starting at byte %d, incorrect length (should be 13, is %d)",
                      source.pos(payload), payload_len);
   }
   const unsigned char *ptr=payload;
@@ -227,16 +228,16 @@ PeriodicDataRecord::PeriodicDataRecord(const Source &source, const unsigned char
       std::string value(valueptr, cptr);
       cptr++; // skip
       int nbits = atoi(value.c_str());
-      //fprintf(stderr, " '%s'=%d; ", key.c_str(), nbits);
+      //log_f("parse_bt_file:  '%s'=%d; ", key.c_str(), nbits);
       channel_definitions.push_back(std::pair<std::string, int>(key, nbits));
     }
-    //fprintf(stderr, "\n");
+    //log_f("\n");
     
     ptr = (unsigned char*)cdef_end+1;
     data = std::vector<unsigned char>(ptr, end);
   }
   catch (ParseError &e) {
-    throw ParseError("In RTYPE_START_OF_FILE payload starting at byte %d:\n%s", source.pos(payload), e.what());
+    throw ParseError("In RTYPE_START_OF_FILE payload starting at byte %d: %s", source.pos(payload), e.what());
   }
 }
 
@@ -306,23 +307,23 @@ unsigned long long TickToTime::current_tick() { return m_current_tick; }
 void TickToTime::receive_binrec(const StartOfFileRecord &sofr) {
   m_tick_period = sofr.tick_period;
   if (verbose)
-    fprintf(stderr, "SOFR:  tick_period is %llu picoseconds (%g microseconds, %g MHz)\n",
+    log_f("parse_bt_file: SOFR:  tick_period is %llu picoseconds (%g microseconds, %g MHz)",
             m_tick_period, m_tick_period/1e6, 1e6/m_tick_period);
 }
 
 void TickToTime::receive_binrec(const RtcRecord &rtcr) {
   receive_short_ticks(rtcr.tick_count);
   if (verbose) {
-    fprintf(stderr, "Current tick = %llu, tick period = %llu\n", m_current_tick, m_tick_period);
-    fprintf(stderr, "Current tick = %llu, seconds = %g\n", m_current_tick, (m_current_tick * m_tick_period) / 1e12);
+    log_f("parse_bt_file: Current tick = %llu, tick period = %llu", m_current_tick, m_tick_period);
+    log_f("parse_bt_file: Current tick = %llu, seconds = %g", m_current_tick, (m_current_tick * m_tick_period) / 1e12);
   }
   double new_zero_tick_time = rtcr.seconds_since_1970() - (m_current_tick * m_tick_period) / 1e12;
   if (m_zero_tick_time == 0) {
     if (verbose)
-      fprintf(stderr, "RTC record: Setting zero_tick_time to %.9f\n", new_zero_tick_time);
+      log_f("parse_bt_file: RTC record: Setting zero_tick_time to %.9f", new_zero_tick_time);
   } else {
     if (verbose) {
-      fprintf(stderr, "Won't change zero_tick_time by %.9f from %.9f to %.9f\n",
+      log_f("parse_bt_file: Won't change zero_tick_time by %.9f from %.9f to %.9f",
               new_zero_tick_time - m_zero_tick_time, m_zero_tick_time, new_zero_tick_time);
     }
     return;
@@ -358,7 +359,7 @@ void PeriodicDataRecord::set_time(const TickToTime &ttt) {
   first_sample_time = ttt.long_ticks_to_time(first_sample_long_tick);
   last_sample_plus_one_time = ttt.long_ticks_to_time(first_sample_long_tick + number_of_samples * sample_period);
   if (verbose)
-    fprintf(stderr, "PDR::set_time %.9f-%.9f\n", first_sample_time, last_sample_plus_one_time);
+    log_f("parse_bt_file: PDR::set_time %.9f-%.9f", first_sample_time, last_sample_plus_one_time);
 }
 
 
@@ -379,7 +380,7 @@ void parse_bt_file(const std::string &infile,
   const unsigned char *in_mem = (unsigned char*) mmap(NULL, len, PROT_READ, MAP_SHARED/*|MAP_POPULATE*/, fileno(in), 0);
   const unsigned char *end = in_mem + len;
   if (in_mem == (unsigned char*)-1) throw std::runtime_error("mmap");
-  if (verbose) fprintf(stderr, "Mapped %s (%lld KB)\n", infile.c_str(), len/1024);
+  if (verbose) log_f("parse_bt_file: Mapped %s (%lld KB)", infile.c_str(), len/1024);
   Source source(in_mem);
   const unsigned char *ptr = in_mem;
 
@@ -397,10 +398,10 @@ void parse_bt_file(const std::string &infile,
     const unsigned char *beginning_of_record = ptr;
     try {
       unsigned int magic = read_u32(ptr);
-      //fprintf(stderr, "magic=0x%x\n", magic);
+      //log_f("parse_bt_file: magic=0x%x\n", magic);
       if (magic != 0xb0de744c) throw ParseError("Incorrect magic # at byte %d", source.pos(ptr - 4));
       unsigned int record_size = read_u32(ptr);
-      //fprintf(stderr, "record_size=%d\n", record_size);
+      //log_f("parse_bt_file: record_size=%d\n", record_size);
       if (record_size + beginning_of_record > end) throw ParseError("Record size too long at byte %d (size=%d, but only %d bytes left in file)", source.pos(ptr - 4), record_size, end-beginning_of_record);
       int record_type = read_u16(ptr);
       if (record_type != RTYPE_START_OF_FILE && record_type != RTYPE_RTC && record_type != RTYPE_PERIODIC_DATA) {
@@ -409,12 +410,12 @@ void parse_bt_file(const std::string &infile,
       const unsigned char *payload = ptr;
       unsigned int payload_len = record_size-14;
       ptr += payload_len;
-      //fprintf(stderr, "Got record type %d, payload len %d\n", record_type, payload_len);
+      //log_f("parse_bt_file: Got record type %d, payload len %d\n", record_type, payload_len);
       unsigned int crc = read_u32(ptr);
       unsigned int calculated_crc = crc32(beginning_of_record, record_size - 4, 0);
       if (crc != calculated_crc) {
         // Recoverable error;  add to errors and try to continue
-        errors.push_back(ParseError("Incorrect CRC32 byte %d.  read 0x%x != calculated 0x%x\n",
+        errors.push_back(ParseError("Incorrect CRC32 byte %d.  read 0x%x != calculated 0x%x",
                                     source.pos(ptr - 4), crc, calculated_crc));
 	if (record_type == RTYPE_PERIODIC_DATA) info.bad_records++;
         continue;
@@ -430,7 +431,7 @@ void parse_bt_file(const std::string &infile,
       {
         RtcRecord rtcr(source, payload, payload_len);
         ttt.receive_binrec(rtcr);
-        if (verbose) fprintf(stderr, "%s\n", rtcr.to_string().c_str());
+        if (verbose) log_f("parse_bt_file: %s", rtcr.to_string().c_str());
       }
       break;
       case RTYPE_PERIODIC_DATA:
@@ -449,7 +450,7 @@ void parse_bt_file(const std::string &infile,
               data[channel_name] = boost::shared_ptr<std::vector<DataSample<double> > >(new std::vector<DataSample<double> >());
             } else {
               if (data[channel_name]->back().time > data_samples.front().time) {
-                //fprintf(stderr, "Warning: sample times in channel %s are out-of-order (%f > %f)\n",
+                //log_f("Warning: sample times in channel %s are out-of-order (%f > %f)\n",
                 //        channel_name.c_str(),
                 //        data[channel_name]->back().time, data_samples.front().time);
                 out_of_order = true;
@@ -471,7 +472,7 @@ void parse_bt_file(const std::string &infile,
       nrecords[record_type]++;
     }
     catch (ParseError &e) {
-      errors.push_back(ParseError("In record starting at byte %d in file %s:\n%s",
+      errors.push_back(ParseError("In record starting at byte %d in file %s: %s",
                                   source.pos(beginning_of_record), infile.c_str(), e.what()));
       info.bad_records++;
     }
@@ -500,12 +501,12 @@ void parse_bt_file(const std::string &infile,
   }
 
   double duration = doubletime() - begintime;
-  fprintf(stderr, "Parsed %lld bytes in %g seconds (%dK/sec)\n", len, duration, (int)(len / duration / 1024));
+  log_f("parse_bt_file: Parsed %lld bytes in %g seconds (%dK/sec)", len, duration, (int)(len / duration / 1024));
   if (verbose) {
-    fprintf(stderr, "%d RTYPE_START_OF_FILE records\n", nrecords[RTYPE_START_OF_FILE]);
-    fprintf(stderr, "%d RTYPE_RTC records\n", nrecords[RTYPE_RTC]);
-    fprintf(stderr, "%d RTYPE_PERIODIC_DATA records\n", nrecords[RTYPE_PERIODIC_DATA]);
-    fprintf(stderr, "   %lld values\n", nvalues);
+    log_f("parse_bt_file: %d RTYPE_START_OF_FILE records", nrecords[RTYPE_START_OF_FILE]);
+    log_f("parse_bt_file: %d RTYPE_RTC records", nrecords[RTYPE_RTC]);
+    log_f("parse_bt_file: %d RTYPE_PERIODIC_DATA records", nrecords[RTYPE_PERIODIC_DATA]);
+    log_f("parse_bt_file:    %lld values", nvalues);
   }
 }
 

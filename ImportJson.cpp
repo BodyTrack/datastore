@@ -31,12 +31,9 @@ void parse_json_file(const std::string &infile,
   if (!reader.parse(instream, json)) {
     throw ParseError("Failed to parse JSON file");
   }
-  //fprintf(stderr, "%s\n", rtrim(Json::FastWriter().write(json)).c_str());
   
   Json::Value channel_names = json["channel_names"];
-  //fprintf(stderr, "%s\n", rtrim(Json::FastWriter().write(channel_names)).c_str());
   Json::Value numeric_channel_names = json["numeric_ch_names"];
-  //fprintf(stderr, "%s\n", rtrim(Json::FastWriter().write(numeric_channel_names)).c_str());
   
   // Create sample vectors
   std::vector<boost::shared_ptr<std::vector<DataSample<double> > > > vector_numeric_data;
@@ -48,12 +45,11 @@ void parse_json_file(const std::string &infile,
   }
   
   Json::Value datajson = json["data"];
-  //fprintf(stderr, "%s\n", rtrim(Json::FastWriter().write(datajson)).c_str());
 
   for (unsigned i = 0; i < datajson.size(); i++) {
     Json::Value row = datajson[i];
     double timestamp = row[(unsigned int)0].asDouble();
-    //fprintf(stderr, "%.6f %s\n", timestamp, rtrim(Json::FastWriter().write(row)).c_str());
+
     for (unsigned j = 1; j < row.size(); j++) {
       if (row[j].type() == Json::stringValue) {
         vector_string_data[j-1]->push_back(DataSample<std::string>(timestamp, row[j].asString()));

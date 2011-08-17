@@ -18,7 +18,7 @@ ALL=export import gettile
 
 all: $(ALL)
 
-test: test-import-bt test-import-json
+test: test-import-bt test-import-json test-gettile
 	make -C tests
 
 clean:
@@ -47,7 +47,7 @@ jsoncpp-src-0.5.0/libs/libjson_libmt.a:
 gettile: gettile.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0/libs/libjson_libmt.a
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
-test-gettile:
+test-gettile: gettile
 	mkdir -p foo.kvs
 	./gettile /home/bodytrack/projects/bodytrack/website/db/dev.kvs 1 A_Home_Desk.Temperature 0 2560569
 

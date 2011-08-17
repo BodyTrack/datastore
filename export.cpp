@@ -12,6 +12,7 @@
 // Local
 #include "Channel.h"
 #include "FilesystemKVS.h"
+#include "Log.h"
 #include "utils.h"
 
 void usage()
@@ -67,6 +68,7 @@ int main(int argc, char **argv)
   if (!*argptr) usage();
   int uid = atoi(*argptr++);
   if (uid <= 0) usage();
+  set_log_prefix(string_printf("%d %d ", getpid(), uid));
   
   if (!*argptr) usage();
   std::string channel_full_name = *argptr++;
@@ -79,7 +81,6 @@ int main(int argc, char **argv)
 
   if (*argptr) usage();
 
-  fprintf(stderr, "Opening store %s\n", storename.c_str());
   FilesystemKVS store(storename.c_str());
 
   Channel ch(store, uid, channel_full_name);

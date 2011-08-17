@@ -19,11 +19,6 @@ void Tile::to_binary(std::string &dest) const {
   writer.write(double_samples);
   writer.write(string_samples);
   writer.write(ranges);
-//  fprintf(stderr, "wrote %zd bytes:\n", dest.length());
-//  for (unsigned i = 0; i < dest.length(); i++) {
-//    fprintf(stderr, "%02X ", (unsigned char) dest[i]);
-//  }
-//  fprintf(stderr, "\n");
 }
 
 size_t Tile::binary_length() const {

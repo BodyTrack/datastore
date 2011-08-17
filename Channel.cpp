@@ -37,7 +37,6 @@ Channel::Locker::~Locker() {
 bool Channel::read_info(ChannelInfo &info) const {
   std::string info_str;
   if (m_kvs.get(metainfo_key(), info_str) && info_str != "") {
-    //fprintf(stderr, "got key %s, length %zd\n", metainfo_key().c_str(), info_str.length());
     assert(info_str.length() == sizeof(ChannelInfo));
     memcpy((void*)&info, (void*)info_str.c_str(), sizeof(info));
     assert(info.magic == ChannelInfo::MAGIC);
@@ -149,24 +148,21 @@ void Channel::add_data_internal(const std::vector<DataSample<T> > &data, DataRan
 
     Tile tile;
     assert(read_tile(ti, tile));
-    //fprintf(stderr, "add_data: reading tile %s\n", ti.to_string().c_str());
     const DataSample<T> *begin = &data[i];
     while (i < data.size() && ti.contains_time(data[i].time)) i++;
     const DataSample<T> *end = &data[i];
     tile.insert_samples(begin, end);
     
-    //fprintf(stderr, "add_data: added %zd samples\n", end-begin);
     TileIndex new_root = split_tile_if_needed(ti, tile);
     if (new_root != TileIndex::null()) {
       assert(ti == TileIndex::nonnegative_all());
-      log_f("Channel: %s changing root from %s to %s\n",
+      log_f("Channel: %s changing root from %s to %s",
             descriptor().c_str(), ti.to_string().c_str(),
             new_root.to_string().c_str());
       info.nonnegative_root_tile_index = new_root;
       delete_tile(ti); // Delete old root
       ti = new_root;
     }
-    //fprintf(stderr, "add_data: rewriting tile %s\n", ti.to_string().c_str());
     write_tile(ti, tile);
     if (ti == info.nonnegative_root_tile_index && channel_ranges) { *channel_ranges = tile.ranges; }
     if (ti != info.nonnegative_root_tile_index) to_regenerate.insert(ti.parent());
@@ -176,7 +172,6 @@ void Channel::add_data_internal(const std::vector<DataSample<T> > &data, DataRan
   while (!to_regenerate.empty()) {
     TileIndex ti = *to_regenerate.begin();
     to_regenerate.erase(to_regenerate.begin());
-    //fprintf(stderr, "add_data: regenerating tile %s\n", ti.to_string().c_str());
     Tile regenerated, children[2];
     assert(read_tile(ti.left_child(), children[0]));
     assert(read_tile(ti.right_child(), children[1]));
@@ -189,7 +184,6 @@ void Channel::add_data_internal(const std::vector<DataSample<T> > &data, DataRan
 }
 
 void Channel::read_data(std::vector<DataSample<double> > &data, double begin, double end) const {
-  //fprintf(stdout, "read_data(%f,%f)\n", begin, end);
   double time = begin;
   data.clear();
 
@@ -199,7 +193,7 @@ void Channel::read_data(std::vector<DataSample<double> > &data, double begin, do
   bool success = read_info(info);
   if (!success) {
     // Channel doesn't yet exist;  no data
-    fprintf(stderr, "read_data: can't read info\n");
+    log_f("read_data: can't read info");
     return;
   }
   bool first_tile = true;
@@ -208,7 +202,7 @@ void Channel::read_data(std::vector<DataSample<double> > &data, double begin, do
     TileIndex ti = find_lowest_child_overlapping_time(info.nonnegative_root_tile_index, time);
     if (ti.is_null()) {
       // No tiles; no more data
-      fprintf(stderr, "read_data: can't read tile, done\n");
+      log_f("read_data: can't read tile");
       return;
     }
 
@@ -220,11 +214,9 @@ void Channel::read_data(std::vector<DataSample<double> > &data, double begin, do
       for (; i < tile.double_samples.size() && tile.double_samples[i].time < begin; i++);
     }
 
-    //size_t before = data.size();
     for (; i < tile.double_samples.size() && tile.double_samples[i].time < end; i++) {
       data.push_back(tile.double_samples[i]);
     }
-    //fprintf(stdout, "Got %zd samples from %s\n", data.size() - before, ti.to_string().c_str());
     time = ti.end_time();
   }
 }
@@ -247,16 +239,16 @@ void split_samples(const std::vector<DataSample<T> > &from, double split_time, T
 TileIndex Channel::split_tile_if_needed(TileIndex ti, Tile &tile) {
   TileIndex new_root_index = TileIndex::null();
   if (tile.binary_length() <= m_max_tile_size) return new_root_index;
-  //fprintf(stderr, "split_tile_if_needed: splitting tile %s\n", ti.to_string().c_str());
   Tile children[2];
   TileIndex child_indexes[2];
+  log_f("split_tile_if_needed: splitting tile %s", ti.to_string().c_str());
 
   // If we're splitting an "all" tile, it means that until now the channel has only had one tile's worth of
   // data, and that a proper root tile location couldn't be selected.  Select a new root tile now.
   if (ti.is_nonnegative_all()) {
     // TODO: this breaks if all samples are at one time
     ti = new_root_index = TileIndex::index_containing(tile.first_sample_time(), tile.last_sample_time());
-    fprintf(stderr, "Moving root tile to %s\n", ti.to_string().c_str());
+    log_f("split_tile_if_needed: Moving root tile to %s", ti.to_string().c_str());
   }
   
   child_indexes[0]= ti.left_child();
@@ -364,7 +356,7 @@ bool Channel::read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, 
   ChannelInfo info;
   bool success = read_info(info);
   if (!success) {
-    fprintf(stderr, "read_tile_or_closest_ancestor: can't read info\n");
+    log_f("read_tile_or_closest_ancestor: can't read info");
     return false;
   }
   TileIndex root = info.nonnegative_root_tile_index;
@@ -433,8 +425,6 @@ TileIndex Channel::find_lowest_child_overlapping_time(TileIndex ti, double t) co
     ti = child;
   }
 
-  //fprintf(stderr, "find_lowest_child_overlapping_time(%s,%g)->%s\n",
-  //        ti.to_string().c_str(), t, ti.to_string().c_str());
   return ti;
 }
 
@@ -452,8 +442,6 @@ TileIndex Channel::find_lowest_successive_tile(TileIndex root, TileIndex ti) con
   }
   // We are now the left child of our parent;  skip to the right child
   ti = ti.sibling();
-  //fprintf(stderr, "find_lowest_successive_tile(%s): cousin is %s\n",
-  //        orig.to_string().c_str(), ti.to_string().c_str());
 
   return find_lowest_child_overlapping_time(ti, ti.start_time());
 }

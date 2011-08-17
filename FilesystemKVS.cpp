@@ -9,6 +9,7 @@
 #include <stdexcept>
 
 // Local
+#include "Log.h"
 #include "utils.h"
 
 // Self
@@ -21,6 +22,7 @@ FilesystemKVS::FilesystemKVS(const char *root) : m_root(root) {
     throw std::runtime_error("store path " + std::string(root) + " shouldn't end with '/'");
   if (!filename_exists(root))
     throw std::runtime_error(std::string(root) + " does not exist");
+  log_f("FilesystemKVS: opening %s", root);
 }
 
 /// \brief Check if key exists
@@ -49,7 +51,7 @@ void FilesystemKVS::set(const std::string &key, const std::string &value) {
       throw std::runtime_error("fwrite " + path);
     }
   }
-  if (m_verbose) fprintf(stderr, "FilesystemKVS::set(%s) wrote %zd bytes to %s\n", key.c_str(), value.length(), path.c_str());
+  if (m_verbose) log_f("FilesystemKVS::set(%s) wrote %zd bytes to %s", key.c_str(), value.length(), path.c_str());
   fclose(out);
 }
 
@@ -63,7 +65,7 @@ bool FilesystemKVS::get(const std::string &key, std::string &value) const {
   std::string path = key_to_path(key); 
   FILE *in = fopen(path.c_str(), "r");
   if (!in) {
-    if (m_verbose) fprintf(stderr, "FilesystemKVS::get(%s) found no file at %s, returning false\n", key.c_str(), path.c_str());
+    if (m_verbose) log_f("FilesystemKVS::get(%s) found no file at %s, returning false", key.c_str(), path.c_str());
     return false;
   }
   struct stat statbuf;
@@ -79,7 +81,7 @@ bool FilesystemKVS::get(const std::string &key, std::string &value) const {
     }
   }
   fclose(in);
-  if (m_verbose) fprintf(stderr, "FilesystemKVS::get(%s) read %zd bytes from %s\n", key.c_str(), value.length(), path.c_str());
+  if (m_verbose) log_f("FilesystemKVS::get(%s) read %zd bytes from %s", key.c_str(), value.length(), path.c_str());
   return true;
 }
 
@@ -108,7 +110,7 @@ void *FilesystemKVS::lock(const std::string &key) {
     fclose(f);
     throw std::runtime_error("flock " + path);
   }
-  if (m_verbose) fprintf(stderr, "FilesystemKVS::lock(%s) locked %s (fd=%d)\n", key.c_str(), path.c_str(), fd);
+  if (m_verbose) log_f("FilesystemKVS::lock(%s) locked %s (fd=%d)", key.c_str(), path.c_str(), fd);
   return (void*)f;
 }
 
@@ -120,7 +122,7 @@ void FilesystemKVS::unlock(void *lock) {
   int ret = flock(fd, LOCK_UN);
   fclose(f);
   if (ret == -1) throw std::runtime_error("funlock");
-  if (m_verbose) fprintf(stderr, "FilesystemKVS::unlock unlocked fd %d\n", fd);
+  if (m_verbose) log_f("FilesystemKVS::unlock unlocked fd %d", fd);
 }
 
 /// Return path to file that stores the value associated with key

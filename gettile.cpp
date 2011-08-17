@@ -13,6 +13,7 @@
 #include "Channel.h"
 #include "FilesystemKVS.h"
 #include "ImportBT.h"
+#include "Log.h"
 #include "utils.h"
 
 void usage()
@@ -34,6 +35,8 @@ int main(int argc, char **argv)
   if (!*argptr) usage();
   int uid = atoi(*argptr++);
 
+  set_log_prefix(string_printf("%d %d ", getpid(), uid));
+  
   if (!*argptr) usage();
   std::string full_channel_name = *argptr++;
 
@@ -45,9 +48,7 @@ int main(int argc, char **argv)
 
   if (*argptr) usage();
 
-  fprintf(stderr, "Opening store %s\n", storename.c_str());
-  FilesystemKVS store(storename.c_str());
-
+	
   // Desired level and offset
   // Translation between tile request and tilestore:
   // tile: level 0 is 512 samples in 512 seconds
@@ -56,6 +57,11 @@ int main(int argc, char **argv)
 
   // Levels differ by 9 between client and server
   TileIndex client_tile_index = TileIndex(tile_level+9, tile_offset);
+  log_f("gettile: %d %s %d.%lld (time %.9f-%.9f)",
+	uid, full_channel_name.c_str(), tile_level, tile_offset,
+	client_tile_index.start_time(), client_tile_index.end_time());
+
+  FilesystemKVS store(storename.c_str());
 
   // 5th ancestor
   TileIndex requested_index = client_tile_index.parent().parent().parent().parent().parent();
@@ -68,9 +74,9 @@ int main(int argc, char **argv)
   std::vector<DataSample<double> > samples;
   
   if (!success) {
-    fprintf(stderr, "no tile found for %s\n", requested_index.to_string().c_str());
+    log_f("gettile: no tile found for %s", requested_index.to_string().c_str());
   } else {
-    fprintf(stderr, "requested %s: found %s\n", requested_index.to_string().c_str(), actual_index.to_string().c_str());
+    log_f("gettile: requested %s: found %s", requested_index.to_string().c_str(), actual_index.to_string().c_str());
     for (unsigned i = 0; i < tile.double_samples.size(); i++) {
       DataSample<double> &sample=tile.double_samples[i];
       if (client_tile_index.contains_time(sample.time)) samples.push_back(sample);
@@ -93,7 +99,7 @@ int main(int argc, char **argv)
     }
   }
   
-  fprintf(stderr, "gettile finished in %lld msec\n", millitime() - begin_time);
+  log_f("gettile: finished in %lld msec", millitime() - begin_time);
 
   double line_break_threshold = client_tile_index.duration() / 512.0 * 4.0; // 4*binsize
   if (!binned && samples.size() > 1) {
@@ -109,7 +115,7 @@ int main(int argc, char **argv)
   }
   
   if (samples.size()) {
-    fprintf(stderr, "outputting %zd samples\n", samples.size());
+    log_f("gettile: outputting %zd samples", samples.size());
     printf("{");
     printf("\"level\":%d", tile_level);
     printf(",");
@@ -140,7 +146,7 @@ int main(int argc, char **argv)
     printf("]");
     printf("}");
   } else {
-    fprintf(stderr, "No samples\n");
+    log_f("gettile: no samples");
     printf("{}");
   }
 
