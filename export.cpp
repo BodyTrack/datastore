@@ -69,6 +69,15 @@ int main(int argc, char **argv)
   int uid = atoi(*argptr++);
   if (uid <= 0) usage();
   set_log_prefix(string_printf("%d %d ", getpid(), uid));
+
+  {
+    std::string arglist;
+    for (int i = 0; i < argc; i++) {
+      if (i) arglist += " ";
+      arglist += std::string("'")+argv[i]+"'";
+    }
+    log_f("export START: %s", arglist.c_str());
+  }
   
   if (!*argptr) usage();
   std::string channel_full_name = *argptr++;

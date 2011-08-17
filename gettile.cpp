@@ -57,10 +57,17 @@ int main(int argc, char **argv)
 
   // Levels differ by 9 between client and server
   TileIndex client_tile_index = TileIndex(tile_level+9, tile_offset);
-  log_f("gettile: %d %s %d.%lld (time %.9f-%.9f)",
-	uid, full_channel_name.c_str(), tile_level, tile_offset,
-	client_tile_index.start_time(), client_tile_index.end_time());
 
+  {
+    std::string arglist;
+    for (int i = 0; i < argc; i++) {
+      if (i) arglist += " ";
+      arglist += std::string("'")+argv[i]+"'";
+    }
+    log_f("gettile START: %s (time %.9f-%.9f)",
+	  arglist.c_str(), client_tile_index.start_time(), client_tile_index.end_time());
+  }
+    
   FilesystemKVS store(storename.c_str());
 
   // 5th ancestor

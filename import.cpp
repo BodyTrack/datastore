@@ -32,6 +32,15 @@ int main(int argc, char **argv)
   long long begin_time = millitime();
   char **argptr = argv+1;
 
+  {
+    std::string arglist;
+    for (int i = 0; i < argc; i++) {
+      if (i) arglist += " ";
+      arglist += std::string("'")+argv[i]+"'";
+    }
+    log_f("import START: %s", arglist.c_str());
+  }
+
   if (!*argptr) usage();
   std::string storename = *argptr++;
 
@@ -57,10 +66,16 @@ int main(int argc, char **argv)
 
 
   bool write_partial_on_errors = true;
-  
+  bool backup_imported_files = true;
+
   for (unsigned i = 0; i < files.size(); i++) {
     std::string filename = files[i];
-    log_f("import: Importing %s into UID %d", filename.c_str(), uid);
+    log_f("import: Importing %s into %d %s", filename.c_str(), uid, dev_nickname.c_str());
+    if (backup_imported_files) {
+      std::string backup_name = "/var/log/bodytrack/imports/" + filename_sans_directory(filename);
+      log_f("import: backing up %s to %s", filename.c_str(), backup_name.c_str());
+      system(string_printf("rsync '%s' '%s'", filename.c_str(), backup_name.c_str()).c_str());
+    }
     
     ParseInfo info;
     std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > > numeric_data;
