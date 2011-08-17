@@ -12,7 +12,7 @@
 std::string string_vprintf(const char *fmt, va_list args)
 {
   std::string ret;
-  int size= 1000;
+  int size= 40000;
   while (1) {
     ret.resize(size);
 #if defined(_WIN32)

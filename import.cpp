@@ -168,7 +168,7 @@ int main(int argc, char **argv)
     result["channel_specs"] = info.channel_specs;
     std::string send = rtrim(Json::FastWriter().write(result));
     printf("%s\n", send.c_str());
-    log_f("import: sending %s", send.c_str());
+    log_f("import: sending: %s", send.c_str());
   }
   log_f("import: finished in %lld msec", millitime() - begin_time);
   return 0;
