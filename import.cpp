@@ -184,9 +184,10 @@ int execute(int argc, char **argv) {
       result["max_time"] = Json::Value(import_time_range.max());
     }
     result["channel_specs"] = info.channel_specs;
+    log_f("import: finished in %lld msec", millitime() - begin_time);
+    result["log"]=Json::Value(recorded_log());
     emit_json(result);
   }
-  log_f("import: finished in %lld msec", millitime() - begin_time);
   return 0;
 }
 

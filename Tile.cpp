@@ -114,5 +114,5 @@ std::string Tile::summary() const
   return string_printf("[ndoubles %zd weight %f; nstrings %zd weight %f; ranges times=%s doubles=%s]", 
 		       double_samples.size(), doubles_weight,
 		       string_samples.size(), strings_weight,
-                       ranges.times.to_string().c_str(), ranges.double_samples.to_string().c_str());
+                       ranges.times.to_string("%.6f").c_str(), ranges.double_samples.to_string().c_str());
 }

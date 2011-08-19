@@ -11,23 +11,30 @@
 
 std::string string_vprintf(const char *fmt, va_list args)
 {
-  std::string ret;
-  int size= 40000;
+  int size= 500;
+  char *buf = (char*)malloc(size);
   while (1) {
-    ret.resize(size);
+    va_list copy;
+    va_copy(copy, args);
 #if defined(_WIN32)
-    int nwritten= _vsnprintf(&ret[0], size-1, fmt, args);
+    int nwritten= _vsnprintf(buf, size, fmt, copy);
 #else
-    int nwritten= vsnprintf(&ret[0], size-1, fmt, args);
+    int nwritten= vsnprintf(buf, size, fmt, copy);
 #endif
+    va_end(copy);
     // Some c libraries return -1 for overflow, some return
     // a number larger than size-1
-    if (nwritten >= 0 && nwritten < size-2) {
-      if (ret[nwritten-1] == 0) nwritten--;
-      ret.resize(nwritten);
+    if (nwritten < 0) {
+      size *= 2;
+    } else if (nwritten >= size) {
+      size = nwritten + 1;
+    } else {
+      if (nwritten && buf[nwritten-1] == 0) nwritten--;
+      std::string ret(buf, buf+nwritten);
+      free(buf);
       return ret;
     }
-    size *= 2;
+    buf = (char*)realloc(buf, size);
   }
 }
 

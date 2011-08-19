@@ -33,8 +33,8 @@ public:
     m_max = std::max(m_max, x.m_max);
   }
   bool operator==(const Range &rhs) const { return m_min == rhs.m_min && m_max == rhs.m_max; }
-  std::string to_string() const {
-    return empty() ? "[null]" : string_printf("%g:%g", m_min, m_max);
+  std::string to_string(const char *fmt="%g") const {
+    return empty() ? "[null]" : string_printf((std::string(fmt)+":"+fmt).c_str(), m_min, m_max);
   }
 };
 
