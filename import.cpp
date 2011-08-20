@@ -22,7 +22,8 @@
 void usage()
 {
   std::cerr << "Usage:\n";
-  std::cerr << "import store.kvs uid device-nickname file1.bt ... fileN.bt\n";
+  std::cerr << "import store.kvs uid device-nickname [--format format] file1.bt ... fileN.bt\n";
+  std::cerr << "allows formats: bt json\n";
   throw std::runtime_error("Bad arguments");
 }
 
@@ -56,18 +57,27 @@ int execute(int argc, char **argv) {
   if (!*argptr) usage();
   std::string dev_nickname = *argptr++;
 
-  std::vector<std::string> files(argptr, argv+argc);
-  if (!files.size()) usage();
+  std::string format = "";
+  std::vector<std::string> files;
 
-  for (unsigned i = 0; i < files.size(); i++) {
-    if (!filename_exists(files[i])) {
-      log_f("import: file %s doesn't exist", files[i].c_str());
-      usage();
+  while (*argptr) {
+    if (!strcmp(*argptr, "--format")) {
+      argptr++;
+      if (!*argptr) usage();
+      format = *argptr++;
+    }
+    else {
+      if (!filename_exists(*argptr)) {
+        log_f("import: file %s doesn't exist", *argptr);
+        usage();
+      }
+      files.push_back(*argptr++);
     }
   }
 
-  FilesystemKVS store(storename.c_str());
+  if (!files.size()) usage();
 
+  FilesystemKVS store(storename.c_str());
 
   bool write_partial_on_errors = true;
   bool backup_imported_files = true;
@@ -85,13 +95,19 @@ int execute(int argc, char **argv) {
     std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > > numeric_data;
     std::map<std::string, boost::shared_ptr<std::vector<DataSample<std::string> > > > string_data;
     std::vector<ParseError> errors;
-    
-    if (!strcasecmp(filename_suffix(filename).c_str(), "bt")) {
+
+    std::string this_format;
+    if (format != "") {
+      this_format = format;
+    } else {
+      this_format = filename_suffix(filename);
+    }
+    if (!strcasecmp(this_format.c_str(), "bt")) {
       parse_bt_file(filename, numeric_data, errors, info);
-    } else if (!strcasecmp(filename_suffix(filename).c_str(), "json")) {
+    } else if (!strcasecmp(this_format.c_str(), "json")) {
       parse_json_file(filename, numeric_data, string_data, errors, info);
     } else {
-      throw std::runtime_error(string_printf("Unrecognized filename suffix '%s'", filename_suffix(filename).c_str()));
+      throw std::runtime_error(string_printf("Unrecognized format or filename suffix '%s'", this_format.c_str()));
     }
 
     if (errors.size()) {

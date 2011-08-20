@@ -18,7 +18,7 @@ ALL=export import gettile
 
 all: $(ALL)
 
-test: test-import-bt test-import-json
+test: test-import-bt test-import-json test-import-json-format gettile
 	make -C tests
 
 clean:
@@ -79,6 +79,18 @@ test-import-json: import export
 	rm -rf foo.kvs
 	mkdir -p foo.kvs
 	./import foo.kvs 1 rphone testdata/json_import20110805-4317-1pzfs94-0.json
+	./export foo.kvs 1 rphone.accuracy
+	./export foo.kvs 1 rphone.altitude
+	./export foo.kvs 1 rphone.bearing
+	./export foo.kvs 1 rphone.latitude
+	./export foo.kvs 1 rphone.longitude
+	./export foo.kvs 1 rphone.speed
+	./export foo.kvs 1 rphone.provider
+
+test-import-json-format: import export
+	rm -rf foo.kvs
+	mkdir -p foo.kvs
+	./import foo.kvs 1 rphone --format json testdata/json_import20110805-4317-1pzfs94-0
 	./export foo.kvs 1 rphone.accuracy
 	./export foo.kvs 1 rphone.altitude
 	./export foo.kvs 1 rphone.bearing
