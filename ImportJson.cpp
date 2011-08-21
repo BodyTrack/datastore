@@ -54,11 +54,16 @@ void parse_json_file(const std::string &infile,
     try {
       timestamp = row[(unsigned int)0].asDouble();
     } catch (std::exception &e) {
-      std::string msg =
-	string_printf("In row %d, cannot parse timestamp (first col) of %s as double-precision",
-		      i, rtrim(Json::FastWriter().write(row)).c_str());
-      throw ParseError(msg.c_str());
-
+      try {
+	// HACK!  parse
+	timestamp = atof(row[(unsigned int)0].asString().c_str());
+	if (timestamp == 0) throw ParseError("zero timestamp");
+      } catch (std::exception &e) {
+	std::string msg =
+	  string_printf("In row %d, cannot parse timestamp (first col) of %s as double-precision",
+			i, rtrim(Json::FastWriter().write(row)).c_str());
+	throw ParseError(msg.c_str());
+      }
     }
 
     for (unsigned j = 1; j < row.size(); j++) {
