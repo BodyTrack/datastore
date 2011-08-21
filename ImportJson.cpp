@@ -46,9 +46,20 @@ void parse_json_file(const std::string &infile,
   
   Json::Value datajson = json["data"];
 
+  Json::FastWriter foo;
+
   for (unsigned i = 0; i < datajson.size(); i++) {
     Json::Value row = datajson[i];
-    double timestamp = row[(unsigned int)0].asDouble();
+    double timestamp;
+    try {
+      timestamp = row[(unsigned int)0].asDouble();
+    } catch (std::exception &e) {
+      std::string msg =
+	string_printf("In row %d, cannot parse timestamp (first col) of %s as double-precision",
+		      i, rtrim(Json::FastWriter().write(row)).c_str());
+      throw ParseError(msg.c_str());
+
+    }
 
     for (unsigned j = 1; j < row.size(); j++) {
       if (row[j].type() == Json::stringValue) {
