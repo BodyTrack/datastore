@@ -132,22 +132,28 @@ int main(int argc, char **argv)
     printf(",");
     printf("\"data\":[");
     double previous_sample_time = client_tile_index.start_time();
+    int samples_written=0;
     for (unsigned i = 0; i < samples.size(); i++) {
-      if (i) putchar(',');
       // TODO: improve linebreak calculations:
       // 1) observe channel specs line break size from database (expressed in time;  some observations have long time periods and others short)
       // 2) insert breaks at beginning or end of tile if needed
       // 3) should client be the one to decide where line breaks are (if we give it the threshold?)
       if (samples[i].time - previous_sample_time > line_break_threshold) {
 	// Insert line break, which has value -1e+308
-	printf("[%f,-1e308,0,1],", 0.5*(samples[i].time+previous_sample_time));
+	if (samples_written) putchar(',');
+	printf("[%f,-1e308,0,0]", 0.5*(samples[i].time+previous_sample_time));
+	samples_written++;
       }
       previous_sample_time = samples[i].time;
       // TODO: fix so we never see NAN here!
+      if (samples_written) putchar(',');
       printf("[%f,%g,%g,%g]", samples[i].time, samples[i].value, isnan(samples[i].stddev) ? 0 : samples[i].stddev, samples[i].weight);
+      samples_written++;
     }
     if (client_tile_index.end_time() - previous_sample_time > line_break_threshold) {
-      printf("[%f,-1e308,0,1],", 0.5*(previous_sample_time + client_tile_index.end_time()));
+      if (samples_written) putchar(',');
+      printf("[%f,-1e308,0,0]", 0.5*(previous_sample_time + client_tile_index.end_time()));
+      samples_written++;
     }
       
     printf("]");
