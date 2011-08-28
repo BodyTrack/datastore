@@ -30,6 +30,10 @@ install-local: $(INSTALL_BINS)
 	mkdir -p ../website/lib/datastore/$(ARCH)
 	cp $^ ../website/lib/datastore/$(ARCH)
 
+install-dev-local: $(INSTALL_BINS)
+	mkdir -p ../website-dev/lib/datastore/$(ARCH)
+	cp $^ ../website-dev/lib/datastore/$(ARCH)
+
 install-static: $(INSTALL_BINS)
 	mkdir -p /u/apps/bodytrack/static/$(ARCH)
 	cp $^ /u/apps/bodytrack/static/$(ARCH)
@@ -40,6 +44,11 @@ install-remote: $(INSTALL_BINS)
 install-deploy: $(INSTALL_BINS)
 	mkdir -p /u/apps/bodytrack/current/lib/datastore/$(ARCH)
 	rsync -a $^ /u/apps/bodytrack/current/lib/datastore/$(ARCH)
+
+install-test-deploy: $(INSTALL_BINS)
+	mkdir -p /u/apps/bodytrack-test/current/lib/datastore/$(ARCH)
+	rsync -a $^ /u/apps/bodytrack-test/current/lib/datastore/$(ARCH)
+
 
 jsoncpp-src-0.5.0/libs/libjson_libmt.a:
 	(cd jsoncpp-src-0.5.0 && python scons.py platform=linux-gcc && cd libs && ln -sf linux*/*.a libjson_libmt.a)
