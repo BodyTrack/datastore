@@ -14,11 +14,11 @@ SOURCES=tilegen.cpp mysql_common.cpp MysqlQuery.cpp Channel.cpp Logrec.cpp Tile.
 INCLUDES=mysql_common.h MysqlQuery.h Tile.h Channel.h Logrec.h
 INSTALL_BINS=export import gettile
 
-ALL=export import gettile
+ALL=export import gettile copy
 
 all: $(ALL)
 
-test: test-import-bt test-import-json test-import-json-format gettile
+test: test-import-bt test-import-json test-import-json-format gettile copy
 	make -C tests
 
 clean:
@@ -33,6 +33,10 @@ install-local: $(INSTALL_BINS)
 install-dev-local: $(INSTALL_BINS)
 	mkdir -p ../website-dev/lib/datastore/$(ARCH)
 	cp $^ ../website-dev/lib/datastore/$(ARCH)
+
+install-prod-local: $(INSTALL_BINS)
+	mkdir -p ../website-prod/lib/datastore/$(ARCH)
+	cp $^ ../website-prod/lib/datastore/$(ARCH)
 
 install-static: $(INSTALL_BINS)
 	mkdir -p /u/apps/bodytrack/static/$(ARCH)
@@ -75,6 +79,9 @@ import:	import.cpp BinaryIO.cpp BinaryIO.h ImportBT.cpp ImportJson.cpp Binrec.cp
 export: export.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0/libs/libjson_libmt.a
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
+copy: copy.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0/libs/libjson_libmt.a
+	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
+
 test-import-bt: import export
 	rm -rf foo.kvs
 	mkdir -p foo.kvs
@@ -84,7 +91,9 @@ test-import-bt: import export
 	./export foo.kvs 1 ar-basestation.Pressure
 	./export foo.kvs 1 ar-basestation.Temperature
 
-test-import-json: import export
+test-import-json: test-import-json-single test-import-json-multiple test-import-json-format
+
+test-import-json-single: import export
 	rm -rf foo.kvs
 	mkdir -p foo.kvs
 	./import foo.kvs 1 rphone testdata/json_import20110805-4317-1pzfs94-0.json
@@ -96,17 +105,16 @@ test-import-json: import export
 	./export foo.kvs 1 rphone.speed
 	./export foo.kvs 1 rphone.provider
 
+test-import-json-multiple: import export
+	rm -rf foo.kvs
+	mkdir -p foo.kvs
+	./import foo.kvs 1 rphone testdata/multiple.json
+	./export foo.kvs 1 rphone.latitude rphone.altitude rphone.speed | diff testdata/multiple.json.export -
+
 test-import-json-format: import export
 	rm -rf foo.kvs
 	mkdir -p foo.kvs
 	./import foo.kvs 1 rphone --format json testdata/json_import20110805-4317-1pzfs94-0
-	./export foo.kvs 1 rphone.accuracy
-	./export foo.kvs 1 rphone.altitude
-	./export foo.kvs 1 rphone.bearing
-	./export foo.kvs 1 rphone.latitude
-	./export foo.kvs 1 rphone.longitude
-	./export foo.kvs 1 rphone.speed
-	./export foo.kvs 1 rphone.provider
 
 docs:
 	doxygen KVS.cpp KVS.h

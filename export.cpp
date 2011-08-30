@@ -18,7 +18,7 @@
 void usage()
 {
   std::cerr << "Usage:\n";
-  std::cerr << "import store.kvs uid dev_nickname.ch_name [min-time [max-time]]\n";
+  std::cerr << "export store.kvs uid dev_nickname.ch_name [dev_nickname.ch_name ...]\n";
   std::cerr << "Exiting...\n";
   exit(1);
 }
@@ -79,23 +79,27 @@ int main(int argc, char **argv)
     log_f("export START: %s", arglist.c_str());
   }
   
-  if (!*argptr) usage();
-  std::string channel_full_name = *argptr++;
+  std::vector<std::string> channel_full_names;
+  
+  while (*argptr) {
+    channel_full_names.push_back(*argptr++);
+  }
+  if (!channel_full_names.size()) usage();
 
   double min_time = -std::numeric_limits<double>::max();
-  if (*argptr) min_time = atof(*argptr++);
+  //  if (*argptr) min_time = atof(*argptr++);
 
   double max_time = std::numeric_limits<double>::max();
-  if (*argptr) min_time = atof(*argptr++);
-
-  if (*argptr) usage();
+  //if (*argptr) min_time = atof(*argptr++);
 
   FilesystemKVS store(storename.c_str());
 
-  Channel ch(store, uid, channel_full_name);
-
-  ch.read_bottommost_tiles_in_range(min_time, max_time, dump_samples);
+  for (unsigned i = 0; i < channel_full_names.size(); i++) {
+    std::string &channel_full_name = channel_full_names[i];
+    if (i) printf("\f");
+    printf("Time\t%s\n", channel_full_name.c_str());
+    Channel ch(store, uid, channel_full_name);
+    ch.read_bottommost_tiles_in_range(min_time, max_time, dump_samples);
+  }
   return 0;
 }
-
-

@@ -16,32 +16,42 @@
 // Self
 #include "ImportJson.h"
 
-void parse_json_file(const std::string &infile,
-		     std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > > &numeric_data,
-		     std::map<std::string, boost::shared_ptr<std::vector<DataSample<std::string> > > > &string_data,
-		     std::vector<ParseError> &errors,
-		     ParseInfo &info)
-{
-  info.good_records = 0;
-  info.bad_records = 0;
 
-  Json::Reader reader;
-  std::ifstream instream(infile.c_str());
-  Json::Value json;
-  if (!reader.parse(instream, json)) {
-    throw ParseError("Failed to parse JSON file");
+template <typename A, typename B>
+void erase_empty_data(std::map<A, B> &m) {
+
+  for (typename std::map<A, B>::iterator i = m.begin(); i != m.end();) {
+    if (!i->second->size()) {
+      m.erase(i++);
+    } else {
+      i++;
+    }
   }
-  
+}
+
+void parse_json_single(Json::Value json,
+		       std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > > &numeric_data,
+		       std::map<std::string, boost::shared_ptr<std::vector<DataSample<std::string> > > > &string_data,
+		       std::vector<ParseError> &errors,
+		       ParseInfo &info)
+{
   Json::Value channel_names = json["channel_names"];
   Json::Value numeric_channel_names = json["numeric_ch_names"];
-  
-  // Create sample vectors
+
   std::vector<boost::shared_ptr<std::vector<DataSample<double> > > > vector_numeric_data;
   std::vector<boost::shared_ptr<std::vector<DataSample<std::string> > > > vector_string_data;
-  
+
+  // Create channels as needed, and record pointers to them in vector_{numeric|string}_data for fast loading
   for (unsigned i = 0; i < channel_names.size(); i++) {
-    vector_numeric_data.push_back(boost::shared_ptr<std::vector<DataSample<double> > >(new std::vector<DataSample<double> >()));
-    vector_string_data.push_back(boost::shared_ptr<std::vector<DataSample<std::string> > >(new std::vector<DataSample<std::string> >()));
+    std::string channel_name = channel_names[i].asString();
+    if (numeric_data.find(channel_name) == numeric_data.end()) {
+      numeric_data[channel_name] = boost::shared_ptr<std::vector<DataSample<double> > >(new std::vector<DataSample<double> >());
+    }
+    vector_numeric_data.push_back(numeric_data[channel_name]);
+    if (string_data.find(channel_name) == string_data.end()) {
+      string_data[channel_name] = boost::shared_ptr<std::vector<DataSample<std::string> > >(new std::vector<DataSample<std::string> >());
+    }
+    vector_string_data.push_back(string_data[channel_name]);
   }
   
   Json::Value datajson = json["data"];
@@ -75,11 +85,44 @@ void parse_json_file(const std::string &infile,
     }
   }
 
-  for (unsigned i = 0; i < channel_names.size(); i++) {
-    if (vector_numeric_data[i]->size()) numeric_data[channel_names[i].asString()] = vector_numeric_data[i];
-    if (vector_string_data[i]->size()) string_data[channel_names[i].asString()] = vector_string_data[i];
-  }
+  // Remove vectors of size 0
   
-  info.good_records = 1;
+  erase_empty_data(numeric_data);
+  erase_empty_data(string_data);
+  
+  info.good_records++;
 }
 
+void parse_json(Json::Value json,
+		std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > > &numeric_data,
+		std::map<std::string, boost::shared_ptr<std::vector<DataSample<std::string> > > > &string_data,
+		std::vector<ParseError> &errors,
+		ParseInfo &info)
+{  
+  if (json.isArray()) {
+    for (unsigned i = 0; i < json.size(); i++) {
+      parse_json_single(json[i], numeric_data, string_data, errors, info);
+    }
+  } else {
+    parse_json_single(json, numeric_data, string_data, errors, info);
+  }
+}
+
+void parse_json_file(const std::string &infile,
+		     std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > > &numeric_data,
+		     std::map<std::string, boost::shared_ptr<std::vector<DataSample<std::string> > > > &string_data,
+		     std::vector<ParseError> &errors,
+		     ParseInfo &info)
+{
+  info.good_records = 0;
+  info.bad_records = 0;
+
+  Json::Reader reader;
+  std::ifstream instream(infile.c_str());
+  Json::Value json;
+  if (!reader.parse(instream, json)) {
+    throw ParseError("Failed to parse JSON file");
+  }
+  
+  parse_json(json, numeric_data, string_data, errors, info);
+}
