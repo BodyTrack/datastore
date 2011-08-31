@@ -77,7 +77,9 @@ void parse_json_single(Json::Value json,
     }
 
     for (unsigned j = 1; j < row.size(); j++) {
-      if (row[j].type() == Json::stringValue) {
+      if (row[j].type() == Json::nullValue) {
+	// skip
+      } else if (row[j].type() == Json::stringValue) {
         vector_string_data[j-1]->push_back(DataSample<std::string>(timestamp, row[j].asString()));
       } else {
         vector_numeric_data[j-1]->push_back(DataSample<double>(timestamp, row[j].asDouble()));
