@@ -30,6 +30,7 @@ class Tile {
   void from_binary(const std::string &binary);
   void insert_samples(const DataSample<double> *begin, const DataSample<double> *end);
   void insert_samples(const DataSample<std::string> *begin, const DataSample<std::string> *end);
+  template <class T> std::vector<DataSample<T> > &get_samples();
   double first_sample_time() const;
   double last_sample_time() const;
   std::string summary() const;
@@ -38,5 +39,10 @@ private:
   size_t double_samples_length() const;
   size_t string_samples_length() const;
 };
+
+template <>
+inline std::vector<DataSample<double> > &Tile::get_samples<double>() { return double_samples; }
+template <>
+inline std::vector<DataSample<std::string> > &Tile::get_samples<std::string>() { return string_samples; }
 
 #endif
