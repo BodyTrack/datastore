@@ -3,7 +3,7 @@
 
 CPPFLAGS = -Wall -g -I.. -I../jsoncpp-src-0.5.0-patched/include -I/opt/local/include
 LDFLAGS = -L/opt/local/lib -lboost_thread-mt
-ALL = TestBinaryIO.test TestDataSample.test TestTile.test TestChannel.test TestTileIndex.test TestFilesystemKVS.test
+ALL = TestJson.test TestBinaryIO.test TestDataSample.test TestTile.test TestChannel.test TestTileIndex.test TestFilesystemKVS.test
 BINARIES = TestBinaryIO TestDataSample TestTile TestChannel TestTileIndex TestFilesystemKVS
 all: $(ALL)
 
@@ -14,6 +14,9 @@ VPATH = ..
 
 %.test: %
 	./$^
+
+TestJson: TestJson.cpp utils.cpp utils.h ../jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
+	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS) || (rm $@ && exit 1)
 
 TestBinaryIO: TestBinaryIO.cpp BinaryIO.cpp BinaryIO.h utils.cpp utils.h
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS) || (rm $@ && exit 1)

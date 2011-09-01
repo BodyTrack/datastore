@@ -66,13 +66,25 @@ std::string valueToString( UInt value )
 std::string valueToString( double value )
 {
    char buffer[32];
+   std::string exponent;
 #if defined(_MSC_VER) && defined(__STDC_SECURE_LIB__) // Use secure version with visual studio 2005 to avoid warning. 
    sprintf_s(buffer, sizeof(buffer), "%#.16g", value); 
 #else	
    sprintf(buffer, "%#.16g", value); 
 #endif
-   char* ch = buffer + strlen(buffer) - 1;
-   if (*ch != '0') return buffer; // nothing to truncate, so save time
+
+   // Remove exponent, if present, before looking for trailing zeros
+   
+   char *exp = strchr(buffer, 'e');
+   if (exp) {
+     *exp = 0;
+     // Remove leading + in exponent, if any
+     exponent = std::string("e") + std::string(exp[1] == '+' ? exp+2 : exp+1);
+   }
+
+   char *ch = buffer + strlen(buffer) - 1;
+
+   if (*ch != '0') return std::string(buffer) + exponent; // nothing to truncate, so save time
    while(ch > buffer && *ch == '0'){
      --ch;
    }
@@ -98,14 +110,14 @@ std::string valueToString( double value )
 	 *(last_nonzero)=0;
        } else {
 	 // Number is of form XY.Z00;  remove starting at the last zero
-	 *(last_nonzero+1) = '\0';
+	 *(last_nonzero+1)=0;
        }
-       return buffer;
+       return std::string(buffer) + exponent;
      default:
-       return buffer;
+       return std::string(buffer) + exponent;
      }
    }
-   return buffer;
+   return std::string(buffer) + exponent;
 }
 
 

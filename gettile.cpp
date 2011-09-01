@@ -25,23 +25,6 @@ void usage()
   exit(1);
 }
 
-void copy_samples_in_range(Tile &tile, std::vector<DataSample<double> > &samples, TileIndex client_tile_index) {
-  for (unsigned i = 0; i < tile.double_samples.size(); i++) {
-    DataSample<double> &sample=tile.double_samples[i];
-    if (client_tile_index.contains_time(sample.time)) samples.push_back(sample);
-  }
-}
-
-void copy_samples_in_range(Tile &tile, std::vector<DataSample<std::string> > &samples, TileIndex client_tile_index) {
-  for (unsigned i = 0; i < tile.string_samples.size(); i++) {
-    DataSample<std::string> &sample=tile.string_samples[i];
-    if (client_tile_index.contains_time(sample.time)) {
-      samples.push_back(sample);
-    } else {
-    }
-  }
-}
-
 template <typename T>
 void read_tile_samples(KVS &store, int uid, std::string full_channel_name, TileIndex requested_index, TileIndex client_tile_index, std::vector<DataSample<T> > &samples, bool &binned)
 {
@@ -54,7 +37,10 @@ void read_tile_samples(KVS &store, int uid, std::string full_channel_name, TileI
     log_f("gettile: no tile found for %s", requested_index.to_string().c_str());
   } else {
     log_f("gettile: requested %s: found %s", requested_index.to_string().c_str(), actual_index.to_string().c_str());
-    copy_samples_in_range(tile, samples, client_tile_index);
+    for (unsigned i = 0; i < tile.get_samples<T>().size(); i++) {
+      DataSample<T> &sample=tile.get_samples<T>()[i];
+      if (client_tile_index.contains_time(sample.time)) samples.push_back(sample);
+    }
   }
 
   if (samples.size() <= 512) {
@@ -140,10 +126,14 @@ int main(int argc, char **argv)
 
   std::vector<DataSample<double> > double_samples;
   std::vector<DataSample<std::string> > string_samples;
+  std::vector<DataSample<std::string> > comments;
 
-  bool doubles_binned, strings_binned;
+  bool doubles_binned, strings_binned, comments_binned;
   read_tile_samples(store, uid, full_channel_name, requested_index, client_tile_index, double_samples, doubles_binned);
   read_tile_samples(store, uid, full_channel_name, requested_index, client_tile_index, string_samples, strings_binned);
+  read_tile_samples(store, uid, full_channel_name+"._comment", requested_index, client_tile_index, comments, comments_binned);
+  string_samples.insert(string_samples.end(), comments.begin(), comments.end());
+  std::sort(string_samples.begin(), string_samples.end(), DataSample<std::string>::time_lessthan);
   
   std::map<double, DataSample<double> > double_sample_map;
   for (unsigned i = 0; i < double_samples.size(); i++) {
