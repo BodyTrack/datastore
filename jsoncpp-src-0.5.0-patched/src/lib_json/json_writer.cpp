@@ -92,8 +92,14 @@ std::string valueToString( double value )
        --ch;
        continue;
      case '.':
-       // Truncate zeroes to save bytes in output, but keep one.
-       *(last_nonzero+2) = '\0';
+       // Truncate zeroes to save bytes in output
+       if (ch == last_nonzero) {
+	 // Number is of form XYZ.000;  remove the decimal
+	 *(last_nonzero)=0;
+       } else {
+	 // Number is of form XY.Z00;  remove starting at the last zero
+	 *(last_nonzero+1) = '\0';
+       }
        return buffer;
      default:
        return buffer;
