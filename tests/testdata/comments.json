@@ -1,0 +1,10 @@
+{
+  "channel_names": ["comments"],
+  "channel_specs": {"comments": {"class": "comment"}},
+  "data": [
+    [1314712800, "I can see clearly now the rain has gone."],	
+    [1314716400, "I can see all the obstacles in my way."],
+    [1314720000, "Gone are the dark clouds that had me blind."],
+    [1314723600, "It's going to be a bright, bright, sunshiney day."]
+  ]
+}

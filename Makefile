@@ -18,7 +18,7 @@ ALL=export import gettile copy
 
 all: $(ALL)
 
-test: test-import-bt test-import-json test-import-json-format gettile copy
+test: all
 	make -C tests
 
 clean:
@@ -60,19 +60,6 @@ jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a:
 gettile: gettile.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
-test-gettile: gettile
-	mkdir -p foo.kvs
-	./gettile /home/bodytrack/projects/bodytrack/website/db/dev.kvs 1 A_Home_Desk.Temperature 0 2560569
-
-test-annebug: import gettile
-	rm -rf anne.kvs
-	mkdir anne.kvs
-	./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/4e386a43.bt
-	./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
-	./import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/345.bt
-	./gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 | wc
-
-
 import:	import.cpp BinaryIO.cpp BinaryIO.h ImportBT.cpp ImportJson.cpp Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
@@ -82,46 +69,8 @@ export: export.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Chann
 copy: copy.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
-test-import-bt: import export
-	rm -rf foo.kvs
-	mkdir -p foo.kvs
-	./import foo.kvs 1 ar-basestation bt/ar_basestation/4cfcff7d.bt
-	./export foo.kvs 1 ar-basestation.Humidity
-	./export foo.kvs 1 ar-basestation.Microphone | tail
-	./export foo.kvs 1 ar-basestation.Pressure
-	./export foo.kvs 1 ar-basestation.Temperature
-
-test-import-json: test-import-json-single test-import-json-multiple test-import-json-format
-
-test-import-json-single: import export
-	rm -rf foo.kvs
-	mkdir -p foo.kvs
-	./import foo.kvs 1 rphone testdata/json_import20110805-4317-1pzfs94-0.json
-	./export foo.kvs 1 rphone.accuracy
-	./export foo.kvs 1 rphone.altitude
-	./export foo.kvs 1 rphone.bearing
-	./export foo.kvs 1 rphone.latitude
-	./export foo.kvs 1 rphone.longitude
-	./export foo.kvs 1 rphone.speed
-	./export foo.kvs 1 rphone.provider
-
-test-import-json-multiple: import export
-	rm -rf foo.kvs
-	mkdir -p foo.kvs
-	./import foo.kvs 1 rphone testdata/multiple.json
-	./export foo.kvs 1 rphone.latitude rphone.altitude rphone.speed | diff testdata/multiple.json.export -
-
-test-import-json-format: import export
-	rm -rf foo.kvs
-	mkdir -p foo.kvs
-	./import foo.kvs 1 rphone --format json testdata/json_import20110805-4317-1pzfs94-0
-
 docs:
 	doxygen KVS.cpp KVS.h
-
-TestFileBlock: TestFileBlock.cpp FileBlock.cpp FileBlock.h MappedFile.cpp MappedFile.h
-	g++ -g $(CPPFLAGS) -o $@ $^
-	./$@
 
 read_bt: Binrec.cpp crc32.cpp DataStore.cpp utils.cpp Log.cpp jsoncpp-src-0.5.0-patched/libs
 	g++ -g $(CPPFLAGS) Binrec.cpp crc32.cpp DataStore.cpp utils.cpp -o $@  -L./jsoncpp-src-0.5.0-patched/libs/linux-gcc -ljson_linux-gcc

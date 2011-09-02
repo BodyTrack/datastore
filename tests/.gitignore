@@ -9,3 +9,5 @@ TestTileIndex
 kvs.test
 TestDataSample
 TestBinaryIO
+TestJson
+log.txt

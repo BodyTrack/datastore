@@ -1,0 +1,13 @@
+{
+  "channel_names": ["headache_severity", "headache_severity._comment"],
+  "data": [
+    [1314712800, 1, null],
+    [1314716400, 1, null],
+    [1314720000, 1, null],
+    [1314723600, 1, null],
+    [1314727200, 5, "Misplaced sunglasses."],
+    [1314730800, 3, "Ah, the clouds are back.  Sun is overrated."],
+    [1314734400, 2, null],
+    [1314738000, 5, "Stupid meeting..."]
+  ]
+}
