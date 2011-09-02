@@ -103,7 +103,7 @@ int execute(int argc, char **argv) {
     } else {
       this_format = filename_suffix(filename);
     }
-    if (!strcasecmp(this_format.c_str(), "bt")) {
+    if (!strcasecmp(this_format.c_str(), "bt") || !strcasecmp(this_format.c_str(), "binary")) {
       parse_bt_file(filename, numeric_data, errors, info);
     } else if (!strcasecmp(this_format.c_str(), "json")) {
       parse_json_file(filename, numeric_data, string_data, errors, info);
