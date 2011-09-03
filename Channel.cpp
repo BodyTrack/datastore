@@ -129,14 +129,17 @@ void Channel::add_data_internal(const std::vector<DataSample<T> > &data, DataRan
   } else {
     info.min_time = std::min(info.min_time, data[0].time);
     info.max_time = std::max(info.max_time, data.back().time);
-    TileIndex new_nonnegative_root_tile_index = TileIndex::index_containing(info.min_time, info.max_time);
-    if (new_nonnegative_root_tile_index.level > info.nonnegative_root_tile_index.level) {
-      // Root index changed.  Confirm new root is parent or more distant ancestor of old root
-      assert(new_nonnegative_root_tile_index.is_ancestor_of(info.nonnegative_root_tile_index));
-      // Trigger regeneration from old root's parent, up through new root
-      to_regenerate.insert(info.nonnegative_root_tile_index.parent());
-      move_root_upwards(new_nonnegative_root_tile_index, info.nonnegative_root_tile_index);
-      info.nonnegative_root_tile_index = new_nonnegative_root_tile_index;
+    // If we're not the all-tile, see if we need to move the root upwards
+    if (info.nonnegative_root_tile_index != TileIndex::nonnegative_all()) {
+      TileIndex new_nonnegative_root_tile_index = TileIndex::index_containing(info.min_time, info.max_time);
+      if (new_nonnegative_root_tile_index.level > info.nonnegative_root_tile_index.level) {
+	// Root index changed.  Confirm new root is parent or more distant ancestor of old root
+	assert(new_nonnegative_root_tile_index.is_ancestor_of(info.nonnegative_root_tile_index));
+	// Trigger regeneration from old root's parent, up through new root
+	to_regenerate.insert(info.nonnegative_root_tile_index.parent());
+	move_root_upwards(new_nonnegative_root_tile_index, info.nonnegative_root_tile_index);
+	info.nonnegative_root_tile_index = new_nonnegative_root_tile_index;
+      }
     }
   }
 

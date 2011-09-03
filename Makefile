@@ -19,10 +19,11 @@ ALL=export import gettile copy
 all: $(ALL)
 
 test: all
-	make -C tests
+	make -C test
 
 clean:
 	rm -f $(ALL)
+	make -C test clean
 
 ARCH:=$(shell uname -s -m | sed 's/ /_/' | tr 'A-Z' 'a-z')
 

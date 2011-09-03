@@ -14,7 +14,7 @@ ALL = \
 	test-import-json-single \
 	test-import-json-multiple \
 	test-import-json-format \
-	test-import-bt \
+	test-import-json-single-entry \
 	TestJson.test \
 	TestBinaryIO.test \
 	TestDataSample.test \
@@ -27,7 +27,7 @@ BINARIES = TestBinaryIO TestDataSample TestTile TestChannel TestTileIndex TestFi
 all: $(ALL)
 
 clean:
-	rm -rf $(BINARIES)
+	rm -rf $(BINARIES) log.txt
 
 VPATH = ..
 
@@ -63,7 +63,7 @@ test-annebug:
 	../import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/345.bt $(CMPJSON) output/test-annebug-3
 	../gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125  $(CMPJSON) output/test-annebug-4
 
-test-import-bt: import export
+test-import-bt:
 	rm -rf foo.kvs
 	mkdir -p foo.kvs
 	../import foo.kvs 1 ar-basestation testdata/ar_basestation/4cfcff7d.bt $(CMPJSON) output/test-import-bt-1
@@ -72,9 +72,7 @@ test-import-bt: import export
 	../export foo.kvs 1 ar-basestation.Pressure                            $(CMPTXT) output/test-import-bt-4
 	../export foo.kvs 1 ar-basestation.Temperature                         $(CMPTXT) output/test-import-bt-5
 
-test-import-json: test-import-json-single test-import-json-multiple test-import-json-format
-
-test-import-json-single: import export
+test-import-json-single:
 	rm -rf foo.kvs
 	mkdir -p foo.kvs
 	../import foo.kvs 1 rphone testdata/json_import20110805-4317-1pzfs94-0.json $(CMPJSON) output/test-import-json-single-1
@@ -97,6 +95,16 @@ test-import-json-format:
 	mkdir -p foo.kvs
 	../import foo.kvs 1 rphone --format json testdata/json_import20110805-4317-1pzfs94-0 $(CMPJSON) output/test-import-json-format-1
 	../export foo.kvs 1 rphone.latitude rphone.altitude rphone.speed                     $(CMPTXT) output/test-import-json-format-2
+
+test-import-json-single-entry:
+	rm -rf foo.kvs
+	mkdir -p foo.kvs
+	../import foo.kvs 1 myiphone testdata/mymee-anne-import-test-110901.json $(CMPJSON) output/test-import-json-single-entry-1
+	../export foo.kvs 1 myiphone Dopaboost                                   $(CMPTXT) output/test-import-json-single-entry-2
+	../export foo.kvs 1 myiphone Dopaboost._comment                          $(CMPTXT) output/test-import-json-single-entry-3
+	../import foo.kvs 1 myiphone testdata/mymee-anne-import-test-110901.json $(CMPJSON) output/test-import-json-single-entry-4
+	../export foo.kvs 1 myiphone Dopaboost                                   $(CMPTXT) output/test-import-json-single-entry-2
+	../export foo.kvs 1 myiphone Dopaboost._comment                          $(CMPTXT) output/test-import-json-single-entry-3
 
 ../jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a:
 	make -C .. jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a

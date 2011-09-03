@@ -1,0 +1,6 @@
+{
+ "dev_nickname":"15668",
+ "channel_names":["Pollen"],
+ "channel_specs":{"Pollen":{"type":"Float","units":"grains per cubic meter"}},
+ "data":[[1.312372800955E9,8.0],[1.312459200958E9,8.4],[1.31254560096E9,7.6]]
+}
