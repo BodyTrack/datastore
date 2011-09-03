@@ -62,9 +62,24 @@ public:
   std::string dump_tile_summaries() const;
 
   bool read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, Tile &ret) const;
-  void read_bottommost_tiles_in_range(double min_time, double max_time, bool (*callback)(const Tile &t, double min_time, double max_time)) const;
+  void read_bottommost_tiles_in_range(Range times, bool (*callback)(const Tile &t, Range times)) const;
 
   std::string descriptor() const;
+
+  /// Get subchannel names
+  /// \param kvs store
+  /// \param owner_id  Owner id
+  /// \param prefix  Channel name prefix.  Empty string for top level
+  /// \param names  Subchannel names are added to this vector of strings
+  /// \param nlevels  Number of levels to recurse; if omitted, recurse all levels
+  static void get_subchannel_names(KVS &kvs, int owner_id, 
+				   const std::string &prefix, 
+				   std::vector<std::string> &names, 
+				   unsigned int nlevels = -1);
+
+
+  static int total_tiles_read;
+  static int total_tiles_written;
 
 private:
   KVS &m_kvs;

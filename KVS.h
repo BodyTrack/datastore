@@ -1,7 +1,9 @@
 #ifndef INCLUDE_KVS_H
 #define INCLUDE_KVS_H
 
+// C++
 #include <string>
+#include <vector>
 
 class KVSLocker;
 
@@ -40,9 +42,15 @@ public:
   /// Delete key if present
   /// \return Returns true if deleted, false if not present
   virtual bool del(const std::string &key) = 0;
+  /// Get subkeys
+  /// \param key
+  /// \param nlevels:  1=only return immediate children; 2=children and grandchildren; (unsigned int) -1: all children
+  /// \return All subkeys, recursively
+  virtual void get_subkeys(const std::string &key, std::vector<std::string> &keys, unsigned int nlevels=-1) const = 0;
   /// Set verbosity
   /// \param verbosity 0=don't print; >0 print varying amounts for operations
   void set_verbosity(int verbosity) { m_verbose = verbosity; }
+  
 private:
   friend class KVSLocker;
   /// Lock key.  Do not call this directly;  instead, use KVSLocker to create a scoped lock

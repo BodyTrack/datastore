@@ -5,6 +5,7 @@
 #include <boost/cstdint.hpp>
 
 // Local includes
+#include "Range.h"
 #include "TileIndex.h"
 
 struct ChannelInfo {
@@ -13,8 +14,7 @@ struct ChannelInfo {
     MAGIC = 0x68437442 // Magic('BtCh')
   };
   boost::uint32_t version;
-  double min_time;
-  double max_time;
+  Range times;
   TileIndex nonnegative_root_tile_index;
   TileIndex negative_root_tile_index;
 };

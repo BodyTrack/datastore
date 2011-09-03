@@ -6,7 +6,7 @@
 
 void test_index_containing(double min, double max)
 {
-  TileIndex ti = TileIndex::index_containing(min, max);
+  TileIndex ti = TileIndex::index_containing(Range(min, max));
   tassert(ti.contains_time(min));
   tassert(ti.contains_time(max));
   tassert(!ti.left_child().contains_time(max));

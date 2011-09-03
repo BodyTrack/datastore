@@ -1,7 +1,9 @@
 // System
 #include <assert.h>
+#include <dirent.h>
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/file.h>
 #include <sys/stat.h>
 
@@ -30,7 +32,7 @@ FilesystemKVS::FilesystemKVS(const char *root) : m_root(root) {
 /// \return Returns true if found, false if not
 bool FilesystemKVS::has_key(const std::string &key) const {
   struct stat statbuf;
-  int ret= stat(key_to_path(key).c_str(), &statbuf);
+  int ret= stat(value_key_to_path(key).c_str(), &statbuf);
   return (ret == 0);
 }
 
@@ -38,7 +40,7 @@ bool FilesystemKVS::has_key(const std::string &key) const {
 /// \param key
 /// \param value
 void FilesystemKVS::set(const std::string &key, const std::string &value) {
-  std::string path = key_to_path(key); 
+  std::string path = value_key_to_path(key); 
   FILE *out = fopen(path.c_str(), "w");
   if (!out) {
     make_parent_directories(path);
@@ -62,7 +64,7 @@ void FilesystemKVS::set(const std::string &key, const std::string &value) {
 ///
 /// See FilesystemKVS class description for the mapping between datastore and filesystem.
 bool FilesystemKVS::get(const std::string &key, std::string &value) const {
-  std::string path = key_to_path(key); 
+  std::string path = value_key_to_path(key); 
   FILE *in = fopen(path.c_str(), "r");
   if (!in) {
     if (m_verbose) log_f("FilesystemKVS::get(%s) found no file at %s, returning false", key.c_str(), path.c_str());
@@ -89,8 +91,28 @@ bool FilesystemKVS::get(const std::string &key, std::string &value) const {
 /// \param key
 /// \return Returns true if deleted, false if not present
 bool FilesystemKVS::del(const std::string &key) {
-  std::string path = key_to_path(key);
+  std::string path = value_key_to_path(key);
   return unlink(path.c_str()) == 0;
+}
+
+/// Get subkeys
+/// \param key
+/// \param nlevels:  1=only return immediate children; 2=children and grandchildren; (unsigned int) -1: all children
+/// \return All subkeys, recursively
+void FilesystemKVS::get_subkeys(const std::string &key, std::vector<std::string> &keys, unsigned int nlevels) const {
+  std::string path = directory_key_to_path(key);
+  std::string prefix = (key == "") ? "" : key+".";
+  DIR *dir = opendir(path.c_str());
+  if (!dir) return;
+  while (1) {
+    struct dirent *ent = readdir(dir);
+    if (!ent) break;
+    if (!strcmp(ent->d_name, ".")) continue;
+    if (!strcmp(ent->d_name, "..")) continue;
+    if (filename_suffix(ent->d_name) == "val") keys.push_back(prefix+filename_sans_suffix(ent->d_name));
+    else if (nlevels > 0 && ent->d_type == DT_DIR) get_subkeys(prefix+ent->d_name, keys, nlevels-1);
+  }
+  closedir(dir);
 }
 
 /// Lock key.  Do not call this directly;  instead, use KVSLocker to create a scoped lock.
@@ -98,7 +120,7 @@ bool FilesystemKVS::del(const std::string &key) {
 ///
 /// Uses flock on file that contains value.
 void *FilesystemKVS::lock(const std::string &key) {
-  std::string path = key_to_path(key); 
+  std::string path = value_key_to_path(key); 
   FILE *f = fopen(path.c_str(), "a");
   if (!f) {
     make_parent_directories(path);
@@ -128,9 +150,18 @@ void FilesystemKVS::unlock(void *lock) {
 /// Return path to file that stores the value associated with key
 /// \param key Key
 /// \return Returns path to file that stores value associated with key
-std::string FilesystemKVS::key_to_path(const std::string &key) const {
+std::string FilesystemKVS::value_key_to_path(const std::string &key) const {
   // Validate key
-  if (key == "" || key[0] == '.' || key[key.size()-1] == '.' || key.find("..") != std::string::npos) {
+  if (key == "") throw std::runtime_error("Invalid key '" + key + "'");
+  return directory_key_to_path(key) + ".val";
+}
+
+/// Return path to directory that stores subkey children of key
+/// \param key Key
+/// \return Returns path to directory that stores subkey children of key
+std::string FilesystemKVS::directory_key_to_path(const std::string &key) const {
+  if (key == "") return m_root;
+  if (key[0] == '.' || key[key.size()-1] == '.' || key.find("..") != std::string::npos) {
     throw std::runtime_error("Invalid key '" + key + "'");
   }
   std::string path = key;
@@ -141,7 +172,7 @@ std::string FilesystemKVS::key_to_path(const std::string &key) const {
       throw std::runtime_error("Invalid key '" + key + "'");
     }
   }
-  return m_root + "/" + path + ".val";
+  return m_root + "/" + path;
 }
 
 void FilesystemKVS::make_parent_directories(const std::string &path) {

@@ -13,6 +13,10 @@
 // Self
 #include "Channel.h"
 
+
+int Channel::total_tiles_read;
+int Channel::total_tiles_written;
+
 /// Create channel reference to KVS
 /// \param owner_id  Owner of channel
 /// \param name      Full name of channel (may be of form device_nickname.channel_name)
@@ -64,6 +68,7 @@ bool Channel::has_tile(TileIndex ti) const {
 bool Channel::read_tile(TileIndex ti, Tile &tile) const {
   std::string binary;
   if (!m_kvs.get(tile_key(ti), binary)) return false;
+  total_tiles_read++;
   tile.from_binary(binary);
   log_f("Channel: read_tile %s %s: %s", 
 	descriptor().c_str(), ti.to_string().c_str(), tile.summary().c_str());
@@ -75,6 +80,7 @@ void Channel::write_tile(TileIndex ti, const Tile &tile) {
   tile.to_binary(binary);
   //assert(binary.size() <= m_max_tile_size);
   m_kvs.set(tile_key(ti), binary);
+  total_tiles_written++;
   log_f("Channel: write_tile %s %s: %s", 
 	descriptor().c_str(), ti.to_string().c_str(), tile.summary().c_str());
 }
@@ -121,17 +127,15 @@ void Channel::add_data_internal(const std::vector<DataSample<T> > &data, DataRan
     // New channel
     info.magic = ChannelInfo::MAGIC;
     info.version = 0x00010000;
-    info.min_time = data[0].time;
-    info.max_time = data.back().time;
+    info.times = Range(data[0].time, data.back().time);
     info.nonnegative_root_tile_index = TileIndex::nonnegative_all();
     create_tile(TileIndex::nonnegative_all());
     info.negative_root_tile_index = TileIndex::null();
   } else {
-    info.min_time = std::min(info.min_time, data[0].time);
-    info.max_time = std::max(info.max_time, data.back().time);
+    info.times.add(Range(data[0].time, data.back().time));
     // If we're not the all-tile, see if we need to move the root upwards
     if (info.nonnegative_root_tile_index != TileIndex::nonnegative_all()) {
-      TileIndex new_nonnegative_root_tile_index = TileIndex::index_containing(info.min_time, info.max_time);
+      TileIndex new_nonnegative_root_tile_index = TileIndex::index_containing(info.times);
       if (new_nonnegative_root_tile_index.level > info.nonnegative_root_tile_index.level) {
 	// Root index changed.  Confirm new root is parent or more distant ancestor of old root
 	assert(new_nonnegative_root_tile_index.is_ancestor_of(info.nonnegative_root_tile_index));
@@ -250,7 +254,7 @@ TileIndex Channel::split_tile_if_needed(TileIndex ti, Tile &tile) {
   // data, and that a proper root tile location couldn't be selected.  Select a new root tile now.
   if (ti.is_nonnegative_all()) {
     // TODO: this breaks if all samples are at one time
-    ti = new_root_index = TileIndex::index_containing(tile.first_sample_time(), tile.last_sample_time());
+    ti = new_root_index = TileIndex::index_containing(Range(tile.first_sample_time(), tile.last_sample_time()));
     log_f("split_tile_if_needed: Moving root tile to %s", ti.to_string().c_str());
   }
   
@@ -387,32 +391,51 @@ bool Channel::read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, 
 }
 
 // TODO: do this without locking?
-void Channel::read_bottommost_tiles_in_range(double min_time, double max_time,
-                                             bool (*callback)(const Tile &t, double min_time, double max_time)) const {
+void Channel::read_bottommost_tiles_in_range(Range times,
+                                             bool (*callback)(const Tile &t, Range times)) const {
   Locker lock(*this);
 
   ChannelInfo info;
   bool success = read_info(info);
   if (!success) return;
+  if (!info.times.intersects(times)) return;
 
-  double time = min_time;
+  double time = times.min;
   TileIndex ti = TileIndex::null();
-  while (time < max_time) {
+  while (time < times.max) {
     if (ti.is_null()) {
-      ti = find_lowest_child_overlapping_time(info.nonnegative_root_tile_index, min_time);
+      ti = find_lowest_child_overlapping_time(info.nonnegative_root_tile_index, times.min);
     } else {
       ti = find_lowest_successive_tile(info.nonnegative_root_tile_index, ti);
     }
-    if (ti.is_null() || ti.start_time() >= max_time) break;
+    if (ti.is_null() || ti.start_time() >= times.max) break;
 
     Tile t;
     assert(read_tile(ti, t));
-    if (!(*callback)(t, min_time, max_time)) break;
+    if (!(*callback)(t, times)) break;
   }
 }
 
 std::string Channel::descriptor() const {
   return string_printf("%d/%s", m_owner_id, m_name.c_str());
+}
+
+
+void Channel::get_subchannel_names(KVS &kvs, int owner_id, 
+				   const std::string &prefix, 
+				   std::vector<std::string> &names, 
+				   unsigned int nlevels) {
+  std::string kvs_prefix = string_printf("%d", owner_id);
+  if (prefix != "") kvs_prefix += "." + prefix;
+  std::vector<std::string> keys;
+  kvs.get_subkeys(kvs_prefix, keys, nlevels);
+  for (unsigned i = 0; i < keys.size(); i++) {
+    if (filename_suffix(keys[i]) == "info") {
+      std::string name_with_uid = filename_sans_suffix(keys[i]);
+      tassert(strchr(name_with_uid.c_str(), '.'));
+      names.push_back(1+strchr(name_with_uid.c_str(), '.'));
+    }
+  }
 }
 
 TileIndex Channel::find_lowest_child_overlapping_time(TileIndex ti, double t) const {

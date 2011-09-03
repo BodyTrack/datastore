@@ -20,10 +20,11 @@ ALL = \
 	TestDataSample.test \
 	TestTile.test \
 	TestChannel.test \
+	TestRange.test \
 	TestTileIndex.test \
 	TestFilesystemKVS.test
 
-BINARIES = TestBinaryIO TestDataSample TestTile TestChannel TestTileIndex TestFilesystemKVS
+BINARIES = TestRange TestBinaryIO TestDataSample TestTile TestChannel TestTileIndex TestFilesystemKVS 
 all: $(ALL)
 
 clean:
@@ -33,6 +34,9 @@ VPATH = ..
 
 %.test: %
 	./$^
+
+TestRange: TestRange.cpp utils.cpp utils.h
+	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS) || (rm $@ && exit 1)
 
 TestJson: TestJson.cpp utils.cpp utils.h ../jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS) || (rm $@ && exit 1)

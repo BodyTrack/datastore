@@ -114,12 +114,12 @@ struct DataRanges {
   Json::Value to_json() const {
     Json::Value ret(Json::objectValue);
     if (!times.empty()) {
-      ret["min_time"] = Json::Value(times.min());
-      ret["max_time"] = Json::Value(times.max());
+      ret["min_time"] = times.min;
+      ret["max_time"] = times.max;
     }
     if (!double_samples.empty()) {
-      ret["min_value"] = Json::Value(double_samples.min());
-      ret["max_value"] = Json::Value(double_samples.max());
+      ret["min_value"] = double_samples.min;
+      ret["max_value"] = double_samples.max;
     }
     return ret;
   }

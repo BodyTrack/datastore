@@ -11,6 +11,7 @@
 #include <boost/cstdint.hpp>
 
 // Local
+#include "Range.h"
 #include "utils.h"
 
 struct TileIndex {
@@ -91,24 +92,19 @@ struct TileIndex {
     return string_printf("%d.%lld", level, offset);
   }
 
-  static TileIndex tile_containing(double time, int level) {
-    assert(0); // TODO: change this to index_at_level_containing
-    return TileIndex(level, floor(time / level_to_duration(level)));
-  }
-
   static TileIndex index_at_level_containing(int level, double time) {
     return TileIndex(level, floor(time / level_to_duration(level)));
   }
 
   /// Select level according to max_time-min_time, selecting tile that contains min_time, then move to parents until max_time is contained
   /// Only works if min and max times are both negative, or nonnegative
-  static TileIndex index_containing(double min_time, double max_time) {
-    assert(min_time < max_time);
-    assert(min_time >= 0 || max_time < 0);
-    int level = (int)floor(log2(max_time - min_time));
-    TileIndex ret = index_at_level_containing(level, min_time);
-    while (!ret.contains_time(max_time)) ret = ret.parent();
-    //fprintf(stderr, "index_containing(%g, %g)=%s\n", min_time, max_time, ret.to_string().c_str());
+  static TileIndex index_containing(Range times) {
+    assert(times.min < times.max);
+    assert(times.min >= 0 || times.max < 0);
+    int level = (int)floor(log2(times.max - times.min));
+    TileIndex ret = index_at_level_containing(level, times.min);
+    while (!ret.contains_time(times.max)) ret = ret.parent();
+    //fprintf(stderr, "index_containing(%g, %g)=%s\n", times.min, times.max, ret.to_string().c_str());
     return ret;
   }
 

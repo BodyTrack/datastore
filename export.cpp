@@ -24,7 +24,7 @@ void usage()
 }
 
 // TODO: export CSV or JSON instead of tab-delimited
-bool dump_samples(const Tile &tile, double min_time, double max_time)
+bool dump_samples(const Tile &tile, Range requested_times)
 {
   unsigned double_index = 0, string_index = 0;
 
@@ -47,12 +47,12 @@ bool dump_samples(const Tile &tile, double min_time, double max_time)
     
     if (select_double) {
       DataSample<double> sample = tile.double_samples[double_index++];
-      if (sample.time < min_time || sample.time >= max_time) break;
-      printf("%.9f\t%g\n", sample.time, sample.value);
+      if (requested_times.includes(sample.time)) 
+	printf("%.9f\t%g\n", sample.time, sample.value);
     } else {
       DataSample<std::string> sample = tile.string_samples[string_index++];
-      if (sample.time < min_time || sample.time >= max_time) break;
-      printf("%.9f\t%s\n", sample.time, sample.value.c_str());
+      if (requested_times.includes(sample.time))
+	printf("%.9f\t%s\n", sample.time, sample.value.c_str());
     }
   }
   return true;
@@ -86,11 +86,7 @@ int main(int argc, char **argv)
   }
   if (!channel_full_names.size()) usage();
 
-  double min_time = -std::numeric_limits<double>::max();
-  //  if (*argptr) min_time = atof(*argptr++);
-
-  double max_time = std::numeric_limits<double>::max();
-  //if (*argptr) min_time = atof(*argptr++);
+  Range times = Range::all();
 
   FilesystemKVS store(storename.c_str());
 
@@ -99,7 +95,7 @@ int main(int argc, char **argv)
     if (i) printf("\f");
     printf("Time\t%s\n", channel_full_name.c_str());
     Channel ch(store, uid, channel_full_name);
-    ch.read_bottommost_tiles_in_range(min_time, max_time, dump_samples);
+    ch.read_bottommost_tiles_in_range(times, dump_samples);
   }
   return 0;
 }

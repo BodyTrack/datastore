@@ -22,10 +22,10 @@ void test_double_samples()
   t1.insert_samples(&samples[0], &samples[samples.size()]);
   tassert_equals(t1.ranges.times.empty(), false);
   tassert_equals(t1.ranges.double_samples.empty(), false);
-  tassert_approx_equals(t1.ranges.times.min(), 1.11);
-  tassert_approx_equals(t1.ranges.times.max(), 2.22);
-  tassert_approx_equals(t1.ranges.double_samples.min(), 333.333);
-  tassert_approx_equals(t1.ranges.double_samples.max(), 555.555);
+  tassert_approx_equals(t1.ranges.times.min, 1.11);
+  tassert_approx_equals(t1.ranges.times.max, 2.22);
+  tassert_approx_equals(t1.ranges.double_samples.min, 333.333);
+  tassert_approx_equals(t1.ranges.double_samples.max, 555.555);
   
   t1.to_binary(binary);
   t2.from_binary(binary);
@@ -37,10 +37,10 @@ void test_double_samples()
   tassert(t2.double_samples[1] == DataSample<double>(2.22, 555.555));
   tassert_equals(t2.ranges.times.empty(), false);
   tassert_equals(t2.ranges.double_samples.empty(), false);
-  tassert_approx_equals(t2.ranges.times.min(), 1.11);
-  tassert_approx_equals(t2.ranges.times.max(), 2.22);
-  tassert_approx_equals(t2.ranges.double_samples.min(), 333.333);
-  tassert_approx_equals(t2.ranges.double_samples.max(), 555.555);
+  tassert_approx_equals(t2.ranges.times.min, 1.11);
+  tassert_approx_equals(t2.ranges.times.max, 2.22);
+  tassert_approx_equals(t2.ranges.double_samples.min, 333.333);
+  tassert_approx_equals(t2.ranges.double_samples.max, 555.555);
 }
 
 void test_string_samples()
@@ -57,8 +57,8 @@ void test_string_samples()
   t1.insert_samples(&samples[0], &samples[samples.size()]);
   tassert_equals(t1.ranges.times.empty(), false);
   tassert_equals(t1.ranges.double_samples.empty(), true);
-  tassert_approx_equals(t1.ranges.times.min(), 1.11);
-  tassert_approx_equals(t1.ranges.times.max(), 2.22);
+  tassert_approx_equals(t1.ranges.times.min, 1.11);
+  tassert_approx_equals(t1.ranges.times.max, 2.22);
   
   t1.to_binary(binary);
   t2.from_binary(binary);
@@ -71,8 +71,8 @@ void test_string_samples()
   tassert_equals(t2.ranges.times.empty(), false);
   tassert(t2.ranges.double_samples.empty());
   tassert_equals(t2.ranges.double_samples.empty(), true);
-  tassert_approx_equals(t2.ranges.times.min(), 1.11);
-  tassert_approx_equals(t2.ranges.times.max(), 2.22);
+  tassert_approx_equals(t2.ranges.times.min, 1.11);
+  tassert_approx_equals(t2.ranges.times.max, 2.22);
 }
 
 int main(int argc, char **argv)

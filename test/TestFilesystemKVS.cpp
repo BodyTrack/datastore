@@ -5,12 +5,16 @@
 
 // C++
 #include <map>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 // BOOST
 #include <boost/thread/thread.hpp>
+
+// Local
+#include "utils.h"
 
 // Module to test
 #include "FilesystemKVS.h"
@@ -21,26 +25,26 @@ void test_new_key(KVS &kvs, const std::string &key, const std::string &val)
 {
   fprintf(stderr, "test_new_key(\"%s\",...)\n", key.c_str());
   std::string tmp="nope";
-  assert(!kvs.has_key(key));
-  assert(!kvs.get(key, tmp));
+  tassert(!kvs.has_key(key));
+  tassert(!kvs.get(key, tmp));
   kvs.set(key, val);
   check[key]=val;
-  assert(kvs.has_key(key));
-  assert(kvs.get(key, tmp));
-  assert(tmp == val);
+  tassert(kvs.has_key(key));
+  tassert(kvs.get(key, tmp));
+  tassert(tmp == val);
 }
 
 void test_overwrite_key(KVS &kvs, const std::string &key, const std::string &val)
 {
   fprintf(stderr, "test_overwrite_key(\"%s\",...)\n", key.c_str());
   std::string tmp="nope";
-  assert(kvs.has_key(key));
-  assert(kvs.get(key, tmp));
+  tassert(kvs.has_key(key));
+  tassert(kvs.get(key, tmp));
   kvs.set(key, val);
   check[key]=val;
-  assert(kvs.has_key(key));
-  assert(kvs.get(key, tmp));
-  assert(tmp == val);
+  tassert(kvs.has_key(key));
+  tassert(kvs.get(key, tmp));
+  tassert(tmp == val);
 }  
 
 void test_invalid_key(KVS &kvs, const std::string &key)
@@ -49,19 +53,19 @@ void test_invalid_key(KVS &kvs, const std::string &key)
 
   try {
     kvs.has_key(key);
-    assert(0);
+    tassert(0);
   } catch (std::runtime_error) {}
 
   try {
     std::string val;
     kvs.get(key, val);
-    assert(0);
+    tassert(0);
   } catch (std::runtime_error) {}
   
   try {
     std::string val="foo";
     kvs.set(key, val);
-    assert(0);
+    tassert(0);
   } catch (std::runtime_error) {}
   
 }
@@ -79,7 +83,7 @@ void test_read_modify_write(KVS &kvs, const std::string &key, const std::string 
   usleep(random()%10000);
   std::string test;
   kvs.get(key, test);
-  assert(val==test);
+  tassert(val==test);
 }
 
 void test_read_modify_write_thread(KVS *kvs, const std::string &key, const std::string &add)
@@ -88,7 +92,7 @@ void test_read_modify_write_thread(KVS *kvs, const std::string &key, const std::
     test_read_modify_write(*kvs, key, add, true);
   } catch (std::runtime_error &err) {
     fprintf(stderr, "test_read_modify_write_thread caught error '%s'\n", err.what());
-    assert(0);
+    tassert(0);
   }
 }
 
@@ -109,21 +113,31 @@ void test_multithreaded_locking(KVS &kvs)
   }
   std::string val;
   kvs.get(key, val);
-  assert(val.size() == nthreads);
+  tassert(val.size() == nthreads);
   for (unsigned int i=0; i<nthreads; i++) {
-    assert(val.find(std::string(1, (char)i)) != std::string::npos);
+    tassert(val.find(std::string(1, (char)i)) != std::string::npos);
   }
 }
 
 void confirm_all_keys(KVS &kvs)
 {
   fprintf(stderr, "confirm_all_keys()\n");
+
+  std::set<std::string> inserted_set;
+
   for (std::map<std::string, std::string>::const_iterator i = check.begin(); i != check.end(); i++) {
-    assert(kvs.has_key(i->first));
+    tassert(kvs.has_key(i->first));
     std::string val="nope";
-    assert(kvs.get(i->first, val));
-    assert(i->second == val);
+    tassert(kvs.get(i->first, val));
+    tassert(i->second == val);
+    inserted_set.insert(i->first);
   }
+
+  std::vector<std::string> subkeys;
+  kvs.get_subkeys("", subkeys);
+  std::set<std::string> subkey_set(subkeys.begin(), subkeys.end());
+
+  tassert(subkey_set == inserted_set);
 }
 
 std::string generate_val(size_t len)
@@ -139,6 +153,8 @@ int main(int argc, char **argv) {
   {
     FilesystemKVS kvs("test.kvs");
     
+    confirm_all_keys(kvs);
+    
     // Test simple key
     test_new_key(kvs, "abc", "123");
     
@@ -149,6 +165,8 @@ int main(int argc, char **argv) {
     test_new_key(kvs, "abc.def.ghi", "1234");
     test_new_key(kvs, "abc.def", "12345");
     test_new_key(kvs, "abc.def.g-hi.jk_l", "123456");
+
+    confirm_all_keys(kvs);
 
     // Test invalid keys
     test_invalid_key(kvs, "");

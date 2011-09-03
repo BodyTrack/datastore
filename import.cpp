@@ -197,8 +197,8 @@ int execute(int argc, char **argv) {
     result["successful_records"] = Json::Value(info.good_records);
     result["failed_records"] = Json::Value(info.bad_records);
     if (!import_time_range.empty()) {
-      result["min_time"] = Json::Value(import_time_range.min());
-      result["max_time"] = Json::Value(import_time_range.max());
+      result["min_time"] = Json::Value(import_time_range.min);
+      result["max_time"] = Json::Value(import_time_range.max);
     }
     result["channel_specs"] = info.channel_specs;
     log_f("import: finished in %lld msec", millitime() - begin_time);

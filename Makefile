@@ -12,17 +12,15 @@ SQL_LDFLAGS = -L/usr/local/mysql/lib -lmysqlclient
 
 SOURCES=tilegen.cpp mysql_common.cpp MysqlQuery.cpp Channel.cpp Logrec.cpp Tile.cpp utils.cpp Log.cpp
 INCLUDES=mysql_common.h MysqlQuery.h Tile.h Channel.h Logrec.h
-INSTALL_BINS=export import gettile
+INSTALL_BINS=export import gettile info
 
-ALL=export import gettile copy
-
-all: $(ALL)
+all: $(INSTALL_BINS)
 
 test: all
 	make -C test
 
 clean:
-	rm -f $(ALL)
+	rm -f $(INSTALL_BINS)
 	make -C test clean
 
 ARCH:=$(shell uname -s -m | sed 's/ /_/' | tr 'A-Z' 'a-z')
@@ -58,17 +56,22 @@ install-test-deploy: $(INSTALL_BINS)
 jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a:
 	(cd jsoncpp-src-0.5.0-patched && python scons.py platform=linux-gcc && cd libs && ln -sf linux*/*.a libjson_libmt.a)
 
+copy: copy.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
+	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
+
+export: export.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
+	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
+
 gettile: gettile.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
 import:	import.cpp BinaryIO.cpp BinaryIO.h ImportBT.cpp ImportJson.cpp Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
-export: export.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
+info: info.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
-
-copy: copy.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
-	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
+	./info -r /u/apps/bodytrack/shared/db/production.kvs 2 --min-time 1314763200 --max-time 1314849600 >fuo2c 2>fue2c
+	#./info -r ~/projects/bodytrack/website-dev/db/dev.kvs 1
 
 docs:
 	doxygen KVS.cpp KVS.h

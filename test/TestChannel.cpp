@@ -58,10 +58,10 @@ void test_subsampling(KVS &kvs)
   tassert_approx_equals(a.get_sample().weight, num_samples);
   tassert_approx_equals(a.get_sample().value, 33);
   tassert_approx_equals(a.get_sample().stddev, 0);
-  tassert_equals(tile.ranges.times.min(), 1);
-  tassert_equals(tile.ranges.times.max(), 100000);
-  tassert_equals(tile.ranges.double_samples.min(), 33);
-  tassert_equals(tile.ranges.double_samples.max(), 33);
+  tassert_equals(tile.ranges.times.min, 1);
+  tassert_equals(tile.ranges.times.max, 100000);
+  tassert_equals(tile.ranges.double_samples.min, 33);
+  tassert_equals(tile.ranges.double_samples.max, 33);
 }
 
 void test_subsampling_stddev(KVS &kvs)
@@ -86,10 +86,10 @@ void test_subsampling_stddev(KVS &kvs)
   tassert_approx_equals(a.get_sample().weight, num_samples);
   tassert_approx_equals(a.get_sample().value, 4.5);
   tassert_approx_equals(a.get_sample().stddev, sqrt(33.0)/2.0);
-  tassert_equals(tile.ranges.times.min(), 1);
-  tassert_equals(tile.ranges.times.max(), 100000);
-  tassert_equals(tile.ranges.double_samples.min(), 0);
-  tassert_equals(tile.ranges.double_samples.max(), 9);
+  tassert_equals(tile.ranges.times.min, 1);
+  tassert_equals(tile.ranges.times.max, 100000);
+  tassert_equals(tile.ranges.double_samples.min, 0);
+  tassert_equals(tile.ranges.double_samples.max, 9);
 }
 
 
@@ -112,8 +112,8 @@ void test_subsampling_string(KVS &kvs)
     tassert(sample.value == "foo bar barf yoyodyne lalalala");
   }
   tassert_approx_equals(total_weight, num_samples);
-  tassert_equals(tile.ranges.times.min(), 1);
-  tassert_equals(tile.ranges.times.max(), 100000);
+  tassert_equals(tile.ranges.times.min, 1);
+  tassert_equals(tile.ranges.times.max, 100000);
   tassert(tile.ranges.double_samples.empty());
 }
 
@@ -201,8 +201,8 @@ int main(int argc, char **argv) {
     tassert(!ch.read_info(info));
     info.magic = ChannelInfo::MAGIC;
     info.version = 0x00010000;
-    info.min_time = 1;
-    info.max_time = 2;
+    info.times.min = 1;
+    info.times.max = 2;
     info.nonnegative_root_tile_index = TileIndex::nonnegative_all();
     info.negative_root_tile_index = TileIndex::negative_all();
     ch.write_info(info);
@@ -212,8 +212,8 @@ int main(int argc, char **argv) {
     tassert(ch.read_info(info2));
     tassert_equals(info2.magic, ChannelInfo::MAGIC);
     tassert_equals(info2.version, 0x00010000);
-    tassert_equals(info2.min_time, 1);
-    tassert_equals(info2.max_time, 2);
+    tassert_equals(info2.times.min, 1);
+    tassert_equals(info2.times.max, 2);
     tassert(info2.nonnegative_root_tile_index == TileIndex::nonnegative_all());
     tassert(info2.negative_root_tile_index == TileIndex::negative_all());
   }
