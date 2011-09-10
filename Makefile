@@ -70,8 +70,6 @@ import:	import.cpp BinaryIO.cpp BinaryIO.h ImportBT.cpp ImportJson.cpp Binrec.cp
 
 info: info.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
-	./info -r /u/apps/bodytrack/shared/db/production.kvs 2 --min-time 1314763200 --max-time 1314849600 >fuo2c 2>fue2c
-	#./info -r ~/projects/bodytrack/website-dev/db/dev.kvs 1
 
 docs:
 	doxygen KVS.cpp KVS.h
