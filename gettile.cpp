@@ -166,8 +166,10 @@ int main(int argc, char **argv)
   }
 
   std::sort(graph_samples.begin(), graph_samples.end());
+
+  double bin_width = client_tile_index.duration() / 512.0;
   
-  double line_break_threshold = client_tile_index.duration() / 512.0 * 4.0; // 4*binsize
+  double line_break_threshold = bin_width * 4.0;
   if (!doubles_binned && double_samples.size() > 1) {
     // Find the median distance between samples
     std::vector<double> spacing(double_samples.size()-1);
@@ -176,7 +178,7 @@ int main(int argc, char **argv)
     }
     std::sort(spacing.begin(), spacing.end());
     double median_spacing = spacing[spacing.size()/2];
-    // Set line_break_threshold to larger of 4*median_spacing and 4*bin_size
+    // Set line_break_threshold to larger of 4*median_spacing and 4*bin_width
     line_break_threshold = std::max(line_break_threshold, median_spacing * 4);
   }
 
@@ -246,6 +248,7 @@ int main(int argc, char **argv)
       data.append(sample);
     }
     tile["data"] = data;
+    tile["sample_width"] = std::max(30.0, bin_width);
     printf("%s\n", rtrim(Json::FastWriter().write(tile)).c_str());
   } else {
     log_f("gettile: no samples");
