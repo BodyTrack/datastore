@@ -124,11 +124,27 @@ void get_channel_info(KVS &store, int uid, const std::string &channel_name,
 		      Range times, Range &found_times, Range &found_values)
 {
   Channel ch(store, uid, channel_name);
-  gcic_found_times = &found_times;
-  gcic_found_values = &found_values;
-  gcic_nsamples = 0;
-  ch.read_bottommost_tiles_in_range(times, get_channel_info_callback);
-  log_f("Channel %s: read %lld samples", channel_name.c_str(), gcic_nsamples);
+  Channel::Locker locker(ch);
+  if (times == Range::all()) {
+    ChannelInfo info;
+    if (!ch.read_info(info)) {
+      log_f("Channel %s: no info", channel_name.c_str());
+      return;
+    }
+    Tile root;
+    if (!ch.read_tile(info.nonnegative_root_tile_index, root)) {
+      log_f("Channel %s: cannot read root tile", channel_name.c_str());
+      return;
+    }
+    found_times = root.ranges.times;
+    found_values = root.ranges.double_samples;
+  } else {
+    gcic_found_times = &found_times;
+    gcic_found_values = &found_values;
+    gcic_nsamples = 0;
+    ch.read_bottommost_tiles_in_range(times, get_channel_info_callback);
+    log_f("Channel %s: read %lld samples", channel_name.c_str(), gcic_nsamples);
+  }
 }
 
 
