@@ -46,7 +46,8 @@ public:
   /// \param key
   /// \param nlevels:  1=only return immediate children; 2=children and grandchildren; (unsigned int) -1: all children
   /// \return All subkeys, recursively
-  virtual void get_subkeys(const std::string &key, std::vector<std::string> &keys, unsigned int nlevels=-1) const = 0;
+  virtual void get_subkeys(const std::string &key, std::vector<std::string> &keys, 
+			   unsigned int nlevels=-1, bool (*subdir_filter)(const char *subdirname)=0) const = 0;
   /// Set verbosity
   /// \param verbosity 0=don't print; >0 print varying amounts for operations
   void set_verbosity(int verbosity) { m_verbose = verbosity; }

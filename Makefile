@@ -1,4 +1,4 @@
-CPPFLAGS = -g -Wall -Ijsoncpp-src-0.5.0-patched/include -I/opt/local/include # -O3 
+CPPFLAGS = -g -Wall -Ijsoncpp-src-0.5.0-patched/include -I/opt/local/include -O3 
 # LDFLAGS = -Ljsoncpp-src-0.5.0-patched/libs -ljson_linux_libmt -static
 
 ifeq ($(shell uname -s),Linux)

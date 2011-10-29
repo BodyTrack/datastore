@@ -16,7 +16,8 @@ public:
   virtual void set(const std::string &key, const std::string &value);
   virtual bool get(const std::string &key, std::string &value) const;
   virtual bool del(const std::string &key);
-  virtual void get_subkeys(const std::string &key, std::vector<std::string> &keys, unsigned int nlevels=-1) const;
+  virtual void get_subkeys(const std::string &key, std::vector<std::string> &keys, 
+			   unsigned int nlevels=-1, bool (*subdir_filter)(const char *subdirname)=0) const;
 private:
   std::string m_root;
 

@@ -190,19 +190,21 @@ int main(int argc, char **argv)
   FilesystemKVS store(storename.c_str());
 
   std::vector<std::string> subchannel_names;
+  long long begin_channel_time = millitime();
   if (recurse) {
     Channel::get_subchannel_names(store, uid, channel_prefix, subchannel_names);
   } else {
     subchannel_names.push_back(channel_prefix);
   }
-  log_f("Found %zd channels", subchannel_names.size());
+  log_f("info: Found %zd channels in %lld msec", 
+	subchannel_names.size(),
+	millitime() - begin_channel_time);
   
   Json::Value info(Json::objectValue);
   Json::Value channel_specs(Json::objectValue);
   
   Range all_found_times;
   for (unsigned i = 0; i < subchannel_names.size(); i++) {
-    fprintf(stderr, "subchannel %s\n", subchannel_names[i].c_str());
     Range found_times, found_values;
     get_channel_info(store, uid, subchannel_names[i], requested_times, found_times, found_values);
     Json::Value channel_bounds(Json::objectValue);

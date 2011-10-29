@@ -99,7 +99,8 @@ bool FilesystemKVS::del(const std::string &key) {
 /// \param key
 /// \param nlevels:  1=only return immediate children; 2=children and grandchildren; (unsigned int) -1: all children
 /// \return All subkeys, recursively
-void FilesystemKVS::get_subkeys(const std::string &key, std::vector<std::string> &keys, unsigned int nlevels) const {
+void FilesystemKVS::get_subkeys(const std::string &key, std::vector<std::string> &keys, 
+				unsigned int nlevels, bool (*subdir_filter)(const char *subdirname)) const {
   std::string path = directory_key_to_path(key);
   std::string prefix = (key == "") ? "" : key+".";
   DIR *dir = opendir(path.c_str());
@@ -109,8 +110,11 @@ void FilesystemKVS::get_subkeys(const std::string &key, std::vector<std::string>
     if (!ent) break;
     if (!strcmp(ent->d_name, ".")) continue;
     if (!strcmp(ent->d_name, "..")) continue;
-    if (filename_suffix(ent->d_name) == "val") keys.push_back(prefix+filename_sans_suffix(ent->d_name));
-    else if (nlevels > 0 && ent->d_type == DT_DIR) get_subkeys(prefix+ent->d_name, keys, nlevels-1);
+    if (filename_suffix(ent->d_name) == "val") {
+      keys.push_back(prefix+filename_sans_suffix(ent->d_name));
+    } else if (nlevels > 1 && ent->d_type == DT_DIR && (!subdir_filter || (*subdir_filter)(ent->d_name))) {
+      get_subkeys(prefix+ent->d_name, keys, nlevels-1);
+    }
   }
   closedir(dir);
 }

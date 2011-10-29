@@ -420,6 +420,13 @@ std::string Channel::descriptor() const {
   return string_printf("%d/%s", m_owner_id, m_name.c_str());
 }
 
+bool not_all_digits_filter(const char *subdir) {
+  while (*subdir) {
+    if (!isdigit(*subdir)) return true;
+    subdir++;
+  }
+  return false;
+}
 
 void Channel::get_subchannel_names(KVS &kvs, int owner_id, 
 				   const std::string &prefix, 
@@ -428,7 +435,7 @@ void Channel::get_subchannel_names(KVS &kvs, int owner_id,
   std::string kvs_prefix = string_printf("%d", owner_id);
   if (prefix != "") kvs_prefix += "." + prefix;
   std::vector<std::string> keys;
-  kvs.get_subkeys(kvs_prefix, keys, nlevels);
+  kvs.get_subkeys(kvs_prefix, keys, nlevels, not_all_digits_filter);
   for (unsigned i = 0; i < keys.size(); i++) {
     if (filename_suffix(keys[i]) == "info") {
       std::string name_with_uid = filename_sans_suffix(keys[i]);
