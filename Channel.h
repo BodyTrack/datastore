@@ -52,7 +52,9 @@ public:
   void write_tile(TileIndex ti, const Tile &tile);
   bool delete_tile(TileIndex ti);
   void create_tile(TileIndex ti);
-  
+
+  double level_from_rate(double samples_per_second) const;
+
   void add_data(const std::vector<DataSample<double> > &data, DataRanges *channel_ranges = NULL);
   void add_data(const std::vector<DataSample<std::string> > &data, DataRanges *channel_ranges = NULL);
   void read_data(std::vector<DataSample<double> > &data, double begin, double end) const;
@@ -63,6 +65,7 @@ public:
 
   bool read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, Tile &ret) const;
   void read_bottommost_tiles_in_range(Range times, bool (*callback)(const Tile &t, Range times)) const;
+  void read_tiles_in_range(Range times, bool (*callback)(const Tile &t, Range times), int desired_level) const;
 
   std::string descriptor() const;
 
@@ -92,7 +95,9 @@ private:
   std::string metainfo_key() const;
 
   TileIndex find_lowest_child_overlapping_time(TileIndex ti, double t) const;
+  TileIndex find_child_overlapping_time(TileIndex ti, double t, int desired_level) const;
   TileIndex find_lowest_successive_tile(TileIndex root, TileIndex ti) const;
+  TileIndex find_successive_tile(TileIndex root, TileIndex ti, int desired_level) const;
   
   TileIndex split_tile_if_needed(TileIndex ti, Tile &tile);
   void create_parent_tile_from_children(TileIndex ti, Tile &parent, Tile children[]);

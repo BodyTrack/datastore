@@ -35,6 +35,10 @@ struct TileIndex {
     return TileIndex(INT_MIN, 0);
   }
 
+  static int32_t lowest_level() {
+    return INT_MIN;
+  }
+
   bool is_nonnegative_all() const {
     return level == INT_MAX && offset == 0;
   }
@@ -79,6 +83,10 @@ struct TileIndex {
 
   static double level_to_duration(int level) {
     return pow(2.0, level);
+  }
+
+  static double duration_to_level(double duration) {
+    return log2(duration);
   }
 
   static double level_to_bin_secs(int level) {

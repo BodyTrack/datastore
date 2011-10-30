@@ -194,6 +194,15 @@ int main(int argc, char **argv) {
     Channel::Locker locker(ch);
   }
 
+  // Test level_from_rate
+  tassert_approx_equals(ch.level_from_rate(   0.5), 16);
+  tassert_approx_equals(ch.level_from_rate(     1), 15);
+  tassert_approx_equals(ch.level_from_rate(  8192),  2);
+  tassert_approx_equals(ch.level_from_rate( 16384),  1);
+  tassert_approx_equals(ch.level_from_rate( 32768),  0);
+  tassert_approx_equals(ch.level_from_rate( 65536), -1);
+  tassert_approx_equals(ch.level_from_rate(131072), -2);
+
   // Test ChannelInfo
 
   {
