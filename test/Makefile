@@ -2,7 +2,9 @@
 .SECONDARY:
 
 CMPJSON = 2>>log.txt | ./compare-json.rb --ignore-log -
+#CMPJSON = 2>>log.txt >
 CMPTXT = 2>>log.txt | diff -
+
 
 CPPFLAGS = -Wall -g -I.. -I../jsoncpp-src-0.5.0-patched/include -I/opt/local/include
 
