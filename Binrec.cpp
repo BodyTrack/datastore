@@ -126,7 +126,7 @@ StartOfFileRecord::StartOfFileRecord(const Source &source, const unsigned char *
     protocol_version = read_u16(ptr);
     time = TimeRecord(source, ptr);
     tick_period = read_u48(ptr);
-    if (verbose) log_f("parse_bt_file: Parsing SOFR:  tick_period is %llu\n", tick_period);
+    if (verbose) log_f("parse_bt_file: Parsing SOFR:  tick_period is %llu", tick_period);
     char *cptr = (char*) ptr, *end= (char*) payload+payload_len;
     if (end[-1] != 0) throw ParseError("At byte %d: DEVICE_PARAMS don't end with NUL", source.pos(end-1));
     while (cptr < end-1) {
@@ -140,7 +140,7 @@ StartOfFileRecord::StartOfFileRecord(const Source &source, const unsigned char *
       if (!cptr) throw ParseError("At byte %d: DEVICE_PARAMS missing newline", source.pos(valueptr));
       std::string value(valueptr, cptr);
       cptr++; // skip
-      if (verbose) log_f("parse_bt_file:   '%s'='%s'\n", key.c_str(), value.c_str());
+      if (verbose) log_f("parse_bt_file:   '%s'='%s'", key.c_str(), value.c_str());
       device_params[key] = value;
     }
     
@@ -156,7 +156,7 @@ StartOfFileRecord::StartOfFileRecord(const Source &source, const unsigned char *
       std::string units = get_channel_units(channel_names[i]);
       double scale = get_channel_scale(channel_names[i]);
       if (verbose)
-        log_f("parse_bt_file:   channel %d: '%s', units '%s', scale %g\n",
+        log_f("parse_bt_file:   channel %d: '%s', units '%s', scale %g",
                 i, channel_names[i].c_str(), units.c_str(), scale);
     }
   }
@@ -228,10 +228,9 @@ PeriodicDataRecord::PeriodicDataRecord(const Source &source, const unsigned char
       std::string value(valueptr, cptr);
       cptr++; // skip
       int nbits = atoi(value.c_str());
-      //log_f("parse_bt_file:  '%s'=%d; ", key.c_str(), nbits);
+      if (verbose) log_f("parse_bt_file:  '%s'=%d", key.c_str(), nbits);
       channel_definitions.push_back(std::pair<std::string, int>(key, nbits));
     }
-    //log_f("\n");
     
     ptr = (unsigned char*)cdef_end+1;
     data = std::vector<unsigned char>(ptr, end);
@@ -398,10 +397,12 @@ void parse_bt_file(const std::string &infile,
     const unsigned char *beginning_of_record = ptr;
     try {
       unsigned int magic = read_u32(ptr);
-      //log_f("parse_bt_file: magic=0x%x\n", magic);
       if (magic != 0xb0de744c) throw ParseError("Incorrect magic # at byte %d", source.pos(ptr - 4));
       unsigned int record_size = read_u32(ptr);
-      //log_f("parse_bt_file: record_size=%d\n", record_size);
+      if (verbose) {
+        log_f("parse_bt_file:  At location %d, magic=0x%x, record size %d",
+              (int)(beginning_of_record - in_mem), magic, record_size);
+      }
       if (record_size + beginning_of_record > end) throw ParseError("Record size too long at byte %d (size=%d, but only %d bytes left in file)", source.pos(ptr - 4), record_size, end-beginning_of_record);
       int record_type = read_u16(ptr);
       if (record_type != RTYPE_START_OF_FILE && record_type != RTYPE_RTC && record_type != RTYPE_PERIODIC_DATA) {
@@ -410,7 +411,7 @@ void parse_bt_file(const std::string &infile,
       const unsigned char *payload = ptr;
       unsigned int payload_len = record_size-14;
       ptr += payload_len;
-      //log_f("parse_bt_file: Got record type %d, payload len %d\n", record_type, payload_len);
+      if (verbose) log_f("parse_bt_file: Got record type %d, payload len %d", record_type, payload_len);
       unsigned int crc = read_u32(ptr);
       unsigned int calculated_crc = crc32(beginning_of_record, record_size - 4, 0);
       if (crc != calculated_crc) {
@@ -442,6 +443,8 @@ void parse_bt_file(const std::string &infile,
         for (unsigned i = 0; i < pdr.n_channels(); i++) {
           std::string channel_name = pdr.channel_name(i);
           nvalues += pdr.number_of_samples;
+          log_f("parse_pt_file: %d samples, start tick 0x%x (%u)",
+                pdr.number_of_samples, pdr.first_sample_short_tick, pdr.first_sample_short_tick);
           std::vector<DataSample<double> > data_samples;
           pdr.get_data_samples(i, data_samples);
 
@@ -450,9 +453,9 @@ void parse_bt_file(const std::string &infile,
               data[channel_name] = boost::shared_ptr<std::vector<DataSample<double> > >(new std::vector<DataSample<double> >());
             } else {
               if (data[channel_name]->back().time > data_samples.front().time) {
-                //log_f("Warning: sample times in channel %s are out-of-order (%f > %f)\n",
-                //        channel_name.c_str(),
-                //        data[channel_name]->back().time, data_samples.front().time);
+                if (verbose) log_f("Warning: sample times in channel %s are out-of-order (%f > %f)",
+                                   channel_name.c_str(),
+                                   data[channel_name]->back().time, data_samples.front().time);
                 out_of_order = true;
               }
             }

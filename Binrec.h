@@ -116,4 +116,6 @@ void parse_bt_file(const std::string &infile,
                    std::vector<ParseError> &errors,
 		   ParseInfo &info);
 
+extern bool verbose;
+
 #endif
