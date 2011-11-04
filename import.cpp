@@ -67,6 +67,10 @@ int execute(int argc, char **argv) {
       if (!*argptr) usage();
       format = *argptr++;
     }
+    if (!strcmp(*argptr, "--verbose")) {
+      argptr++;
+      verbose=true;
+    }
     else {
       if (!filename_exists(*argptr)) {
         log_f("import: file %s doesn't exist", *argptr);
