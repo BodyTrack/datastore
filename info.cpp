@@ -142,6 +142,9 @@ void get_channel_info(KVS &store, int uid, const std::string &channel_name,
     gcic_found_times = &found_times;
     gcic_found_values = &found_values;
     gcic_nsamples = 0;
+    // Look for ~1K samples
+    //int desired_level = ch.level_from_rate(1000 / (times.max - times.min));
+    //ch.read_tiles_in_range(times, get_channel_info_callback, desired_level);
     ch.read_bottommost_tiles_in_range(times, get_channel_info_callback);
     log_f("Channel %s: read %lld samples", channel_name.c_str(), gcic_nsamples);
   }
