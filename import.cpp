@@ -93,7 +93,8 @@ int execute(int argc, char **argv) {
     if (backup_imported_files) {
       std::string backup_name = "/var/log/bodytrack/imports/" + filename_sans_directory(filename);
       log_f("import: backing up %s to %s", filename.c_str(), backup_name.c_str());
-      system(string_printf("rsync '%s' '%s'", filename.c_str(), backup_name.c_str()).c_str());
+      int ret = system(string_printf("rsync '%s' '%s'", filename.c_str(), backup_name.c_str()).c_str());
+      if (ret != 0) log_f("rsync returns non-zero status %d", ret);
     }
     
     ParseInfo info;

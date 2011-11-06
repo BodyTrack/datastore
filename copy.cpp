@@ -106,7 +106,10 @@ int main(int argc, char **argv)
   
   to_ch_ptr = &to_ch;
 
-  from_ch.read_bottommost_tiles_in_range(min_time, max_time, copy_samples);
+  {
+    Channel::Locker locker(from_ch);
+    from_ch.read_bottommost_tiles_in_range(min_time, max_time, copy_samples);
+  }
 
   log_f("copy: FINISHED in %lld msec.  copied %zd doubles and %zd strings", 
 	millitime() - begin_time, total_double_samples, total_string_samples);

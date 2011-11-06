@@ -132,6 +132,7 @@ void *FilesystemKVS::lock(const std::string &key) {
     if (!f) throw std::runtime_error("fopen " +  path);
   }
   int fd= fileno(f);
+  if (m_verbose) log_f("FilesystemKVS::lock(%s) about to lock %s (fd=%d)", key.c_str(), path.c_str(), fd);
   if (-1 == flock(fd, LOCK_EX)) {
     fclose(f);
     throw std::runtime_error("flock " + path);

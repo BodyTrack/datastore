@@ -395,11 +395,8 @@ bool Channel::read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, 
   return true;
 }
 
-// TODO: do this without locking?
 void Channel::read_bottommost_tiles_in_range(Range times,
                                              bool (*callback)(const Tile &t, Range times)) const {
-  Locker lock(*this);
-
   ChannelInfo info;
   bool success = read_info(info);
   if (!success) return;
@@ -421,12 +418,9 @@ void Channel::read_bottommost_tiles_in_range(Range times,
   }
 }
 
-// TODO: do this without locking?
 void Channel::read_tiles_in_range(Range times,
                    	          bool (*callback)(const Tile &t, Range times),
 				  int desired_level) const {
-  Locker lock(*this);
-
   ChannelInfo info;
   bool success = read_info(info);
   if (!success) return;

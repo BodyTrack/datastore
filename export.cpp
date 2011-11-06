@@ -95,6 +95,7 @@ int main(int argc, char **argv)
     if (i) printf("\f");
     printf("Time\t%s\n", channel_full_name.c_str());
     Channel ch(store, uid, channel_full_name);
+    Channel::Locker locker(ch);
     ch.read_tiles_in_range(times, dump_samples, TileIndex::lowest_level());
   }
   return 0;

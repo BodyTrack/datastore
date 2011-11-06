@@ -21,7 +21,7 @@
 void usage()
 {
   std::cerr << "Usage:\n";
-  std::cerr << "info store.kvs [-r] uid [--prefix channel_prefix] [--min-time t] [--max-time t]\n";
+  std::cerr << "info store.kvs [-r] [-v] uid [--prefix channel_prefix] [--min-time t] [--max-time t]\n";
   std::cerr << "\n";
   std::cerr << "If channel_prefix is omitted and empty string and -r is given, give info on all channels for uid\n";
   std::cerr << "examples:\n";
@@ -143,9 +143,9 @@ void get_channel_info(KVS &store, int uid, const std::string &channel_name,
     gcic_found_values = &found_values;
     gcic_nsamples = 0;
     // Look for ~1K samples
-    //int desired_level = ch.level_from_rate(1000 / (times.max - times.min));
-    //ch.read_tiles_in_range(times, get_channel_info_callback, desired_level);
-    ch.read_bottommost_tiles_in_range(times, get_channel_info_callback);
+    int desired_level = ch.level_from_rate(1000 / (times.max - times.min));
+    ch.read_tiles_in_range(times, get_channel_info_callback, desired_level);
+    //ch.read_bottommost_tiles_in_range(times, get_channel_info_callback);
     log_f("Channel %s: read %lld samples", channel_name.c_str(), gcic_nsamples);
   }
 }
@@ -161,11 +161,13 @@ int main(int argc, char **argv)
   bool recurse = false;
   Range requested_times = Range::all();
   int argno = 0;
+  int verbose = 0;
 
   char **argptr = argv+1;
   while (*argptr) {
     std::string arg(*argptr++);
     if (arg == "-r") recurse = true;
+    else if (arg == "-v" && *argptr) verbose++;
     else if (arg == "--prefix" && *argptr) channel_prefix = *argptr++;
     else if (arg == "--min-time" && *argptr) requested_times.min = parse_time(*argptr++);
     else if (arg == "--max-time" && *argptr) requested_times.max = parse_time(*argptr++);
@@ -191,6 +193,7 @@ int main(int argc, char **argv)
   }
 
   FilesystemKVS store(storename.c_str());
+  if (verbose) store.set_verbosity(1);
 
   std::vector<std::string> subchannel_names;
   long long begin_channel_time = millitime();
