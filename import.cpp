@@ -207,7 +207,8 @@ int execute(int argc, char **argv) {
     }
     result["channel_specs"] = info.channel_specs;
     log_f("import: finished in %lld msec", millitime() - begin_time);
-    result["log"]=Json::Value(recorded_log());
+    bool include_log = false;
+    if (include_log) result["log"]=Json::Value(recorded_log());
     emit_json(result);
   }
   return 0;
