@@ -112,8 +112,23 @@ void FilesystemKVS::get_subkeys(const std::string &key, std::vector<std::string>
     if (!strcmp(ent->d_name, "..")) continue;
     if (filename_suffix(ent->d_name) == "val") {
       keys.push_back(prefix+filename_sans_suffix(ent->d_name));
-    } else if (nlevels > 1 && ent->d_type == DT_DIR && (!subdir_filter || (*subdir_filter)(ent->d_name))) {
-      get_subkeys(prefix+ent->d_name, keys, nlevels-1);
+    } else if (nlevels > 1 && (!subdir_filter || (*subdir_filter)(ent->d_name))) {
+      // If it's a directory, recurse, honoring symlinks
+      bool is_directory = false;
+      std::string fullpath = path+"/"+ent->d_name;
+      switch (ent->d_type) {
+      case DT_DIR: is_directory = true; break;
+      case DT_LNK: {
+	struct stat statbuf;
+	int ret = stat(fullpath.c_str(), &statbuf);
+	if (ret != 0) {
+	  perror(("stat " + fullpath).c_str());
+	} else {
+	  is_directory = S_ISDIR(statbuf.st_mode);
+	}
+      }
+      }
+      if (is_directory) get_subkeys(prefix+ent->d_name, keys, nlevels-1);
     }
   }
   closedir(dir);
