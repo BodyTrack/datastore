@@ -80,7 +80,7 @@ void test_read_modify_write(KVS &kvs, const std::string &key, const std::string 
   kvs.set(key, val);
   check[key]=val;
   // Sleep 0-10 msec
-  usleep(random()%10000);
+  //usleep(random()%10000);
   std::string test;
   kvs.get(key, test);
   tassert(val==test);
@@ -102,15 +102,21 @@ void test_multithreaded_locking(KVS &kvs)
   std::string key="abcdef.ghijkl";
   kvs.set(key, "");
   check[key]="";
-  unsigned nthreads=200;
+  unsigned nthreads=50;
   std::vector<boost::thread*> threads;
+  fprintf(stderr, "Making %d threads", nthreads);
   for (unsigned int i=0; i<nthreads; i++) {
     threads.push_back(new boost::thread(test_read_modify_write_thread, &kvs, key, std::string(1, (char)i)));
+    fprintf(stderr, ".");
   }
+  fprintf(stderr, "done\n");
+  fprintf(stderr, "Joining %d threads", nthreads);
   for (unsigned int i=0; i<nthreads; i++) {
     threads[i]->join();
     delete threads[i];
+    fprintf(stderr, ".");
   }
+  fprintf(stderr, "done\n");
   std::string val;
   kvs.get(key, val);
   tassert(val.size() == nthreads);

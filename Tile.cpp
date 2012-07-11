@@ -51,7 +51,7 @@ template <class T>
 void insert_samples_helper(const DataSample<T> *begin, const DataSample<T> *end, std::vector<DataSample<T> > &dest)
 {
   // Assert sortedness
-  for (unsigned i = 1; i < end-begin; i++) assert(begin[i-1].time <= begin[i].time);
+  for (int i = 1; i < end-begin; i++) assert(begin[i-1].time <= begin[i].time);
   
   std::vector<DataSample<T> > tmp(dest.size() + (end-begin));
   DataSample<T> *begin2 = &dest[0];
@@ -67,7 +67,7 @@ void insert_samples_helper(const DataSample<T> *begin, const DataSample<T> *end,
       // Duplicate entry.  Overwrite
       // TODO: do we always want to overwrite?
       *out++ = *begin++;
-      *begin2++;
+      begin2++;
     }
   }
 

@@ -3,7 +3,14 @@
 
 CMPJSON = 2>>log.txt | ./compare-json.rb --ignore-log -
 #CMPJSON = 2>>log.txt >
-CMPTXT = 2>>log.txt | diff -
+CMPTXT = 2>>log.txt | diff -b -
+
+JSON_DIR = ../jsoncpp-src-0.5.0-patched
+
+JSON_SRCS = \
+	$(JSON_DIR)/src/lib_json/json_value.cpp \
+	$(JSON_DIR)/src/lib_json/json_reader.cpp \
+	$(JSON_DIR)/src/lib_json/json_writer.cpp
 
 
 CPPFLAGS = -Wall -g -I.. -I../jsoncpp-src-0.5.0-patched/include -I/opt/local/include
@@ -37,28 +44,28 @@ VPATH = ..
 %.test: %
 	./$^
 
-TestRange: TestRange.cpp utils.cpp utils.h
+TestRange: TestRange.cpp utils.cpp
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS) || (rm $@ && exit 1)
 
-TestJson: TestJson.cpp utils.cpp utils.h ../jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
+TestJson: TestJson.cpp utils.cpp $(JSON_SRCS)
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS) || (rm $@ && exit 1)
 
-TestBinaryIO: TestBinaryIO.cpp BinaryIO.cpp BinaryIO.h utils.cpp utils.h
+TestBinaryIO: TestBinaryIO.cpp BinaryIO.cpp utils.cpp
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS) || (rm $@ && exit 1)
 
-TestDataSample: TestDataSample.cpp DataSample.h utils.cpp utils.h
+TestDataSample: TestDataSample.cpp utils.cpp
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS) || (rm $@ && exit 1)
 
-TestTileIndex: TestTileIndex.cpp TileIndex.h utils.cpp utils.h ../jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
+TestTileIndex: TestTileIndex.cpp utils.cpp $(JSON_SRCS)
 	g++ $(CPPFLAGS) -Wall -g -I .. -I /opt/local/include -o $@ $^ $(LDFLAGS) || (rm $@ && exit 1)
 
-TestTile: TestTile.cpp BinaryIO.cpp BinaryIO.h Log.cpp Log.h Tile.cpp Tile.h utils.cpp utils.h ../jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
+TestTile: TestTile.cpp BinaryIO.cpp Log.cpp Tile.cpp utils.cpp $(JSON_SRCS)
 	g++ $(CPPFLAGS) -Wall -g -I .. -I /opt/local/include -o $@ $^ $(LDFLAGS) || (rm $@ && exit 1)
 
-TestChannel: TestChannel.cpp BinaryIO.cpp BinaryIO.h Channel.cpp Channel.h ChannelInfo.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h ../jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
+TestChannel: TestChannel.cpp BinaryIO.cpp Channel.cpp FilesystemKVS.cpp KVS.cpp Log.cpp Tile.cpp utils.cpp $(JSON_SRCS)
 	g++ $(CPPFLAGS) -Wall -g -I .. -I /opt/local/include -o $@ $^ $(LDFLAGS) || (rm $@ && exit 1)
 
-TestFilesystemKVS: TestFilesystemKVS.cpp FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h utils.cpp Log.cpp Log.h ../jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
+TestFilesystemKVS: TestFilesystemKVS.cpp FilesystemKVS.cpp KVS.cpp utils.cpp Log.cpp $(JSON_SRCS)
 	g++ $(CPPFLAGS) -Wall -g -I .. -I /opt/local/include -o $@ $^ $(LDFLAGS)
 
 test-annebug:
@@ -111,6 +118,3 @@ test-import-json-single-entry:
 	../import foo.kvs 1 myiphone testdata/mymee-anne-import-test-110901.json $(CMPJSON) output/test-import-json-single-entry-4
 	../export foo.kvs 1 myiphone Dopaboost                                   $(CMPTXT) output/test-import-json-single-entry-2
 	../export foo.kvs 1 myiphone Dopaboost._comment                          $(CMPTXT) output/test-import-json-single-entry-3
-
-../jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a:
-	make -C .. jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a

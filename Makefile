@@ -1,6 +1,16 @@
 CPPFLAGS = -g -Wall -Ijsoncpp-src-0.5.0-patched/include -I/opt/local/include -O3 
 # LDFLAGS = -Ljsoncpp-src-0.5.0-patched/libs -ljson_linux_libmt -static
 
+JSON_DIR = jsoncpp-src-0.5.0-patched
+
+JSON_SRCS = \
+	$(JSON_DIR)/src/lib_json/json_value.cpp \
+	$(JSON_DIR)/src/lib_json/json_reader.cpp \
+	$(JSON_DIR)/src/lib_json/json_writer.cpp
+
+SRCS = BinaryIO.cpp Binrec.cpp Channel.cpp crc32.cpp FilesystemKVS.cpp KVS.cpp Log.cpp Tile.cpp utils.cpp $(JSON_SRCS)
+
+INCLUDES = BinaryIO.h Binrec.h Channel.h ChannelInfo.h crc32.h DataSample.h FilesystemKVS.h KVS.h Log.h Tile.h TileIndex.h
 
 ifeq ($(shell uname -s),Linux)
   LDFLAGS = -static
@@ -11,11 +21,8 @@ else
   BOOSTLD = -L/opt/local/lib -lboost_thread-mt -lpthread
 endif
 
-SQL_CPPFLAGS = -I/usr/local/mysql/include 
-SQL_LDFLAGS = -L/usr/local/mysql/lib -lmysqlclient
+# SOURCES=tilegen.cpp mysql_common.cpp MysqlQuery.cpp Channel.cpp Logrec.cpp Tile.cpp utils.cpp Log.cpp
 
-SOURCES=tilegen.cpp mysql_common.cpp MysqlQuery.cpp Channel.cpp Logrec.cpp Tile.cpp utils.cpp Log.cpp
-INCLUDES=mysql_common.h MysqlQuery.h Tile.h Channel.h Logrec.h
 INSTALL_BINS=export import gettile info
 
 all: $(INSTALL_BINS)
@@ -57,23 +64,25 @@ install-test-deploy: $(INSTALL_BINS)
 	rsync -a $^ /u/apps/bodytrack-test/current/lib/datastore/$(ARCH)
 
 
-jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a:
-	(cd jsoncpp-src-0.5.0-patched && python scons.py platform=linux-gcc && cd libs && ln -sf linux*/*.a libjson_libmt.a)
+#jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a:
+#	(cd jsoncpp-src-0.5.0-patched && python scons.py platform=linux-gcc && #cd libs && ln -sf linux*/*.a libjson_libmt.a)
 
-copy: copy.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a 
+copy: copy.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS) $(BOOSTLD)
 
-export: export.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
-	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS) $(BOOSTLD)
+export: export.cpp $(SRCS) $(INCLUDES)
+	g++ $(CPPFLAGS) $@.cpp -o $@ $(SRCS) $(LDFLAGS) $(BOOSTLD)
 
-gettile: gettile.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
-	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS) $(BOOSTLD)
+gettile: gettile.cpp $(SRCS) $(INCLUDES)
+	g++ $(CPPFLAGS) $@.cpp -o $@ $(SRCS) $(LDFLAGS) $(BOOSTLD)
 
-import:	import.cpp BinaryIO.cpp BinaryIO.h ImportBT.cpp ImportJson.cpp Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
-	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS) $(BOOSTLD)
+IMPORT_SRCS = import.cpp ImportBT.cpp ImportJson.cpp
 
-info: info.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h jsoncpp-src-0.5.0-patched/libs/libjson_libmt.a
-	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS) $(BOOSTLD)
+import: $(IMPORT_SRCS) $(SRCS) $(INCLUDES)
+	g++ $(CPPFLAGS) $(IMPORT_SRCS) -o $@ $(SRCS) $(LDFLAGS) $(BOOSTLD)
+
+info: info.cpp $(SRCS) $(INCLUDES)
+	g++ $(CPPFLAGS) $@.cpp -o $@ $(SRCS) $(LDFLAGS) $(BOOSTLD)
 
 docs:
 	doxygen KVS.cpp KVS.h
@@ -82,10 +91,10 @@ read_bt: Binrec.cpp crc32.cpp DataStore.cpp utils.cpp Log.cpp jsoncpp-src-0.5.0-
 	g++ -g $(CPPFLAGS) Binrec.cpp crc32.cpp DataStore.cpp utils.cpp -o $@  -L./jsoncpp-src-0.5.0-patched/libs/linux-gcc -ljson_linux-gcc
 	./read_bt
 
-jsoncpp-src-0.5.0-patched/libs:
-	cd jsoncpp-src-0.5.0-patched; python scons.py platform=linux-gcc check
-	cd jsoncpp-src-0.5.0-patched/libs; ln -sf linux-gcc-* linux-gcc
-	cd jsoncpp-src-0.5.0-patched/libs/linux-gcc; ln -sf libjson_linux-gcc-*.a libjson_linux-gcc.a
+#jsoncpp-src-0.5.0-patched/libs:
+#	cd jsoncpp-src-0.5.0-patched; python scons.py platform=linux-gcc check
+#	cd jsoncpp-src-0.5.0-patched/libs; ln -sf linux-gcc-* linux-gcc
+#	cd jsoncpp-src-0.5.0-patched/libs/linux-gcc; ln -sf libjson_linux-gcc-*.a libjson_linux-gcc.a
 
 tilegen: $(SOURCES) $(INCLUDES)
 	g++ -g $(CPPFLAGS) $(SOURCES) -o $@ $(LDFLAGS) 
