@@ -86,7 +86,7 @@ int execute(int argc, char **argv) {
   FilesystemKVS store(storename.c_str());
 
   bool write_partial_on_errors = true;
-  bool backup_imported_files = true;
+  bool backup_imported_files = false;
 
   for (unsigned i = 0; i < files.size(); i++) {
     std::string filename = files[i];
