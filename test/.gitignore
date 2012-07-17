@@ -12,3 +12,5 @@ TestBinaryIO
 TestJson
 log.txt
 TestRange
+compare_json
+*.exe

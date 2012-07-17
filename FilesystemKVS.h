@@ -18,6 +18,7 @@ public:
   virtual bool del(const std::string &key);
   virtual void get_subkeys(const std::string &key, std::vector<std::string> &keys, 
 			   unsigned int nlevels=-1, bool (*subdir_filter)(const char *subdirname)=0) const;
+  virtual ~FilesystemKVS() {}
 private:
   std::string m_root;
 

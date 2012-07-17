@@ -51,7 +51,7 @@ void read_tile_samples(KVS &store, int uid, std::string full_channel_name, TileI
     std::vector<DataAccumulator<T> > bins(512);
     for (unsigned i = 0; i < samples.size(); i++) {
       DataSample<T> &sample=samples[i];
-      bins[floor(client_tile_index.position(sample.time)*512)] += sample;
+      bins[(int)floor(client_tile_index.position(sample.time)*512)] += sample;
     }
     samples.clear();
     for (unsigned i = 0; i < bins.size(); i++) {

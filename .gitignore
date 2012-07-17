@@ -15,3 +15,5 @@ gettile
 export
 copy
 info
+TAGS
+*.exe

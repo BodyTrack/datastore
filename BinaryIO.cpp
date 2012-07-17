@@ -3,12 +3,12 @@
 #include "BinaryIO.h"
 
 void decompose_string_samples(const std::vector<DataSample<std::string> > &samples,
-                              std::vector<DataSample<boost::uint32_t> > &indexes,
+                              std::vector<DataSample<uint32> > &indexes,
                               std::string &text)
 {
   text = "";
   indexes.resize(samples.size());
-  boost::uint32_t index = 0;
+  uint32 index = 0;
   for (unsigned i = 0; i < samples.size(); i++) {
     indexes[i].time = samples[i].time;
     indexes[i].value = index;
@@ -23,7 +23,7 @@ void decompose_string_samples(const std::vector<DataSample<std::string> > &sampl
   }
 };
 
-void compose_string_samples(const std::vector<DataSample<boost::uint32_t> > &indexes,
+void compose_string_samples(const std::vector<DataSample<uint32> > &indexes,
                             const std::string &text,
                             std::vector<DataSample<std::string> > &samples)
 {
@@ -31,8 +31,8 @@ void compose_string_samples(const std::vector<DataSample<boost::uint32_t> > &ind
   // Add another sample at the end to get the index beyond the last char of text
   for (unsigned i = 0; i < samples.size(); i++) {
     samples[i].time = indexes[i].time;
-    boost::uint32_t begin = indexes[i].value;
-    boost::uint32_t end = i+1 < samples.size() ? indexes[i+1].value : text.length();
+    uint32 begin = indexes[i].value;
+    uint32 end = i+1 < samples.size() ? indexes[i+1].value : text.length();
     samples[i].value = text.substr(begin, end-begin);
     samples[i].weight = indexes[i].weight;
     samples[i].stddev = indexes[i].stddev;
@@ -46,7 +46,7 @@ bool BinaryWriter::eof() const { return m_ptr >= m_end; }
 
 // vector<DataSample<string> >
 void BinaryWriter::write(const std::vector<DataSample<std::string> > &samples) {
-  std::vector<DataSample<boost::uint32_t> > indexes;
+  std::vector<DataSample<uint32> > indexes;
   std::string text;
   decompose_string_samples(samples, indexes, text);
   write(indexes);
@@ -56,7 +56,7 @@ void BinaryWriter::write(const std::vector<DataSample<std::string> > &samples) {
 size_t BinaryWriter::write_length(const std::vector<DataSample<std::string> > &samples) {
   // Trading shorter code for less efficiency.  If we need to speed
   // this up we can calculate the length without computing the value
-  std::vector<DataSample<boost::uint32_t> > indexes;
+  std::vector<DataSample<uint32> > indexes;
   std::string text;
   decompose_string_samples(samples, indexes, text);
   return BinaryWriter::write_length(indexes) + BinaryWriter::write_length(text);
@@ -67,7 +67,7 @@ size_t BinaryWriter::write_length(const std::vector<DataSample<std::string> > &s
 void BinaryWriter::write(const std::string &text) {
   // align 4-byte
   const unsigned char *endptr = m_ptr + write_string_length(text.length());
-  write((boost::uint32_t) text.length());
+  write((uint32) text.length());
   write_bytes(text.c_str(), text.length());
   write_zeros(endptr - m_ptr);
 }
@@ -78,7 +78,7 @@ size_t BinaryWriter::write_length(const std::string &text) {
 
 
 size_t BinaryWriter::write_string_length(size_t len) {
-  return write_length((boost::uint32_t)0) + (len + 3) / 4 * 4;  // Pad to nearest 4-byte boundary
+  return write_length((uint32)0) + (len + 3) / 4 * 4;  // Pad to nearest 4-byte boundary
 }
 
 ////
@@ -104,7 +104,7 @@ bool BinaryReader::eof() const { return m_ptr >= m_end; }
 
 // vector<DataSample<string> >
 void BinaryReader::read(std::vector<DataSample<std::string> > &samples) {
-  std::vector<DataSample<boost::uint32_t> > indexes;
+  std::vector<DataSample<uint32> > indexes;
   std::string text;
   read(indexes);
   read(text);
@@ -115,7 +115,7 @@ void BinaryReader::read(std::vector<DataSample<std::string> > &samples) {
 void BinaryReader::read(std::string &text) {
   // align 4-byte
   const unsigned char *startptr = m_ptr;
-  boost::uint32_t len;
+  uint32 len;
   read(len);
   const unsigned char *endptr = startptr + BinaryWriter::write_string_length(len);
   text.resize(len);

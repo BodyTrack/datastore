@@ -6,15 +6,13 @@
 #include <stdexcept>
 #include <vector>
 
-// BOOST
-#include <boost/smart_ptr.hpp>
-
 // JSON
 #include <json/json.h>
 
 // Local
 #include "DataSample.h"
 #include "Parse.h"
+#include "simple_shared_ptr.h"
 
 struct Source {
   const unsigned char *begin;
@@ -112,7 +110,7 @@ public:
 };
 
 void parse_bt_file(const std::string &infile,
-                   std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > > &data,
+                   std::map<std::string, simple_shared_ptr<std::vector<DataSample<double> > > > &data,
                    std::vector<ParseError> &errors,
 		   ParseInfo &info);
 

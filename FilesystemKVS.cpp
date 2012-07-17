@@ -24,7 +24,7 @@ FilesystemKVS::FilesystemKVS(const char *root) : m_root(root) {
     throw std::runtime_error("store path " + std::string(root) + " shouldn't end with '/'");
   if (!filename_exists(root))
     throw std::runtime_error(std::string(root) + " does not exist");
-  log_f("FilesystemKVS: opening %s", root);
+  if (m_verbose) log_f("FilesystemKVS: opening %s", root);
 }
 
 /// \brief Check if key exists
@@ -41,10 +41,10 @@ bool FilesystemKVS::has_key(const std::string &key) const {
 /// \param value
 void FilesystemKVS::set(const std::string &key, const std::string &value) {
   std::string path = value_key_to_path(key); 
-  FILE *out = fopen(path.c_str(), "w");
+  FILE *out = fopen(path.c_str(), "wb");
   if (!out) {
     make_parent_directories(path);
-    out = fopen(path.c_str(), "w");
+    out = fopen(path.c_str(), "wb");
     if (!out) throw std::runtime_error("fopen " +  path);
   }
   if (value.size()) {
@@ -65,7 +65,7 @@ void FilesystemKVS::set(const std::string &key, const std::string &value) {
 /// See FilesystemKVS class description for the mapping between datastore and filesystem.
 bool FilesystemKVS::get(const std::string &key, std::string &value) const {
   std::string path = value_key_to_path(key); 
-  FILE *in = fopen(path.c_str(), "r");
+  FILE *in = fopen(path.c_str(), "rb");
   if (!in) {
     if (m_verbose) log_f("FilesystemKVS::get(%s) found no file at %s, returning false", key.c_str(), path.c_str());
     return false;
@@ -140,7 +140,7 @@ void FilesystemKVS::get_subkeys(const std::string &key, std::vector<std::string>
 /// Uses flock on file that contains value.
 void *FilesystemKVS::lock(const std::string &key) {
   std::string path = value_key_to_path(key); 
-  FILE *f = fopen(path.c_str(), "a");
+  FILE *f = fopen(path.c_str(), "ab");
   if (!f) {
     make_parent_directories(path);
     f = fopen(path.c_str(), "a");

@@ -83,6 +83,7 @@ public:
 
   static int total_tiles_read;
   static int total_tiles_written;
+  static int verbosity;
 
 private:
   KVS &m_kvs;

@@ -1,9 +1,8 @@
 #ifndef INCLUDE_FILEBLOCK_H
 #define INCLUDE_FILEBLOCK_H
 
-#include <boost/shared_ptr.h>
-
 #include "MappedFile.h"
+#include "simple_shared_ptr.h"
 
 class FileBlock {
 public:
@@ -12,7 +11,7 @@ public:
   static FileBlock open(const char *filename, size_t len);
   char *mem() { return m_mapped_file->mem(); }
 private:
-  boost::shared_ptr<MappedFile> m_mapped_file;
+  simple_shared_ptr<MappedFile> m_mapped_file;
 };
 
 #endif

@@ -7,7 +7,7 @@
 // C
 #include <stdio.h>
 
-#include <boost/shared_ptr.hpp>
+#include "simple_shared_ptr.h"
 
 // Local
 #include "Channel.h"
@@ -30,26 +30,26 @@ void erase_empty_data(std::map<A, B> &m) {
 }
 
 void parse_json_single(Json::Value json,
-		       std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > > &numeric_data,
-		       std::map<std::string, boost::shared_ptr<std::vector<DataSample<std::string> > > > &string_data,
+		       std::map<std::string, simple_shared_ptr<std::vector<DataSample<double> > > > &numeric_data,
+		       std::map<std::string, simple_shared_ptr<std::vector<DataSample<std::string> > > > &string_data,
 		       std::vector<ParseError> &errors,
 		       ParseInfo &info)
 {
   Json::Value channel_names = json["channel_names"];
   Json::Value numeric_channel_names = json["numeric_ch_names"];
 
-  std::vector<boost::shared_ptr<std::vector<DataSample<double> > > > vector_numeric_data;
-  std::vector<boost::shared_ptr<std::vector<DataSample<std::string> > > > vector_string_data;
+  std::vector<simple_shared_ptr<std::vector<DataSample<double> > > > vector_numeric_data;
+  std::vector<simple_shared_ptr<std::vector<DataSample<std::string> > > > vector_string_data;
 
   // Create channels as needed, and record pointers to them in vector_{numeric|string}_data for fast loading
   for (unsigned i = 0; i < channel_names.size(); i++) {
     std::string channel_name = channel_names[i].asString();
     if (numeric_data.find(channel_name) == numeric_data.end()) {
-      numeric_data[channel_name] = boost::shared_ptr<std::vector<DataSample<double> > >(new std::vector<DataSample<double> >());
+      numeric_data[channel_name] = simple_shared_ptr<std::vector<DataSample<double> > >(new std::vector<DataSample<double> >());
     }
     vector_numeric_data.push_back(numeric_data[channel_name]);
     if (string_data.find(channel_name) == string_data.end()) {
-      string_data[channel_name] = boost::shared_ptr<std::vector<DataSample<std::string> > >(new std::vector<DataSample<std::string> >());
+      string_data[channel_name] = simple_shared_ptr<std::vector<DataSample<std::string> > >(new std::vector<DataSample<std::string> >());
     }
     vector_string_data.push_back(string_data[channel_name]);
   }
@@ -96,8 +96,8 @@ void parse_json_single(Json::Value json,
 }
 
 void parse_json(Json::Value json,
-		std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > > &numeric_data,
-		std::map<std::string, boost::shared_ptr<std::vector<DataSample<std::string> > > > &string_data,
+		std::map<std::string, simple_shared_ptr<std::vector<DataSample<double> > > > &numeric_data,
+		std::map<std::string, simple_shared_ptr<std::vector<DataSample<std::string> > > > &string_data,
 		std::vector<ParseError> &errors,
 		ParseInfo &info)
 {  
@@ -111,8 +111,8 @@ void parse_json(Json::Value json,
 }
 
 void parse_json_file(const std::string &infile,
-		     std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > > &numeric_data,
-		     std::map<std::string, boost::shared_ptr<std::vector<DataSample<std::string> > > > &string_data,
+		     std::map<std::string, simple_shared_ptr<std::vector<DataSample<double> > > > &numeric_data,
+		     std::map<std::string, simple_shared_ptr<std::vector<DataSample<std::string> > > > &string_data,
 		     std::vector<ParseError> &errors,
 		     ParseInfo &info)
 {
@@ -120,7 +120,7 @@ void parse_json_file(const std::string &infile,
   info.bad_records = 0;
 
   Json::Reader reader;
-  std::ifstream instream(infile.c_str());
+  std::ifstream instream(infile.c_str(), std::ios::binary);
   Json::Value json;
   if (!reader.parse(instream, json)) {
     throw ParseError("Failed to parse JSON file");

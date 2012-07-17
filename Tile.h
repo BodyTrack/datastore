@@ -5,19 +5,17 @@
 #include <string>
 #include <vector>
 
-// BOOST
-#include <boost/cstdint.hpp>
-
 // Local
 #include "DataSample.h"
 #include "Range.h"
+#include "sizes.h"
 
 class Tile {
  public:
   Tile() { header.magic = MAGIC; header.version = 0x00010000; }
   struct Header {
-    boost::uint32_t magic;
-    boost::uint32_t version;
+    uint32 magic;
+    uint32 version;
   } header;
   DataRanges ranges;
   enum {

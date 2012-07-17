@@ -14,14 +14,13 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
-// Boost
-#include <boost/shared_ptr.hpp>
 
 // Local
 #include "crc32.h"
 #include "DataSample.h"
 #include "KVS.h"
 #include "Log.h"
+#include "simple_shared_ptr.h"
 #include "utils.h"
 
 // Self
@@ -336,7 +335,7 @@ void TickToTime::receive_binrec(const PeriodicDataRecord &pdr) {
 
 void TickToTime::receive_short_ticks(unsigned int short_ticks) {
   if (m_current_tick == 0) {
-    m_current_tick = short_ticks + 0x100000000;
+    m_current_tick = short_ticks + 0x100000000LL;
   } else {
     // Find closest current_tick such that (current_tick % 2^32) == tick_count
     m_current_tick = short_ticks_to_long_ticks(short_ticks);
@@ -363,7 +362,7 @@ void PeriodicDataRecord::set_time(const TickToTime &ttt) {
 
 
 void parse_bt_file(const std::string &infile,
-                   std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > > &data,
+                   std::map<std::string, simple_shared_ptr<std::vector<DataSample<double> > > > &data,
                    std::vector<ParseError> &errors,
 		   ParseInfo &info)
 {
@@ -371,7 +370,7 @@ void parse_bt_file(const std::string &infile,
   info.bad_records = 0;
   double begintime = doubletime();
   // Memory-map file
-  FILE *in = fopen(infile.c_str(), "r");
+  FILE *in = fopen(infile.c_str(), "rb");
   if (!in) throw std::runtime_error("fopen");
   struct stat statbuf;
   if (-1 == fstat(fileno(in), &statbuf)) throw std::runtime_error("fopen");
@@ -450,7 +449,7 @@ void parse_bt_file(const std::string &infile,
 
           if (data_samples.size()) {
             if (data.find(channel_name) == data.end()) {
-              data[channel_name] = boost::shared_ptr<std::vector<DataSample<double> > >(new std::vector<DataSample<double> >());
+              data[channel_name].reset(new std::vector<DataSample<double> >());
             } else {
               if (data[channel_name]->back().time > data_samples.front().time) {
                 if (verbose) log_f("Warning: sample times in channel %s are out-of-order (%f > %f)",
@@ -485,19 +484,19 @@ void parse_bt_file(const std::string &infile,
   fclose(in);
   
   if (out_of_order) {
-    for (std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > >::iterator i =
+    for (std::map<std::string, simple_shared_ptr<std::vector<DataSample<double> > > >::iterator i =
            data.begin(); i != data.end(); ++i) {
       
-      boost::shared_ptr<std::vector<DataSample<double > > > samples = i->second;
+      simple_shared_ptr<std::vector<DataSample<double > > > samples = i->second;
       std::sort(samples->begin(), samples->end(), DataSample<double>::time_lessthan);
     }
   }
 
   // Check samples are in order
-  for (std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > >::iterator i =
+  for (std::map<std::string, simple_shared_ptr<std::vector<DataSample<double> > > >::iterator i =
          data.begin(); i != data.end(); ++i) {
     
-    boost::shared_ptr<std::vector<DataSample<double > > > samples = i->second;
+    simple_shared_ptr<std::vector<DataSample<double > > > samples = i->second;
     for (unsigned i = 0; i < samples->size()-1; i++) {
       assert((*samples)[i].time <= ((*samples)[i+1].time));
     }

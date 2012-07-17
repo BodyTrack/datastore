@@ -1,4 +1,4 @@
-CPPFLAGS = -g -Wall -Ijsoncpp-src-0.5.0-patched/include -I/opt/local/include -O3 
+CPPFLAGS = -g -Wall -Ijsoncpp-src-0.5.0-patched/include -O3
 # LDFLAGS = -Ljsoncpp-src-0.5.0-patched/libs -ljson_linux_libmt -static
 
 JSON_DIR = jsoncpp-src-0.5.0-patched
@@ -14,11 +14,9 @@ INCLUDES = BinaryIO.h Binrec.h Channel.h ChannelInfo.h crc32.h DataSample.h File
 
 ifeq ($(shell uname -s),Linux)
   LDFLAGS = -static
-  BOOSTLD = /usr/lib/libboost_thread-mt.a /usr/lib/libpthread.a
 else
   # Need to build boost libs using macports!
   LDFLAGS =
-  BOOSTLD = -L/opt/local/lib -lboost_thread-mt -lpthread
 endif
 
 # SOURCES=tilegen.cpp mysql_common.cpp MysqlQuery.cpp Channel.cpp Logrec.cpp Tile.cpp utils.cpp Log.cpp
@@ -68,21 +66,21 @@ install-test-deploy: $(INSTALL_BINS)
 #	(cd jsoncpp-src-0.5.0-patched && python scons.py platform=linux-gcc && #cd libs && ln -sf linux*/*.a libjson_libmt.a)
 
 copy: copy.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h
-	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS) $(BOOSTLD)
+	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
 export: export.cpp $(SRCS) $(INCLUDES)
-	g++ $(CPPFLAGS) $@.cpp -o $@ $(SRCS) $(LDFLAGS) $(BOOSTLD)
+	g++ $(CPPFLAGS) $@.cpp -o $@ $(SRCS) $(LDFLAGS)
 
 gettile: gettile.cpp $(SRCS) $(INCLUDES)
-	g++ $(CPPFLAGS) $@.cpp -o $@ $(SRCS) $(LDFLAGS) $(BOOSTLD)
+	g++ $(CPPFLAGS) $@.cpp -o $@ $(SRCS) $(LDFLAGS)
 
 IMPORT_SRCS = import.cpp ImportBT.cpp ImportJson.cpp
 
 import: $(IMPORT_SRCS) $(SRCS) $(INCLUDES)
-	g++ $(CPPFLAGS) $(IMPORT_SRCS) -o $@ $(SRCS) $(LDFLAGS) $(BOOSTLD)
+	g++ $(CPPFLAGS) $(IMPORT_SRCS) -o $@ $(SRCS) $(LDFLAGS)
 
 info: info.cpp $(SRCS) $(INCLUDES)
-	g++ $(CPPFLAGS) $@.cpp -o $@ $(SRCS) $(LDFLAGS) $(BOOSTLD)
+	g++ $(CPPFLAGS) $@.cpp -o $@ $(SRCS) $(LDFLAGS)
 
 docs:
 	doxygen KVS.cpp KVS.h

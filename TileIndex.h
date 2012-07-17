@@ -7,16 +7,14 @@
 #include <limits>
 #include <math.h>
 
-// BOOST
-#include <boost/cstdint.hpp>
-
 // Local
 #include "Range.h"
 #include "utils.h"
+#include "sizes.h"
 
 struct TileIndex {
-  boost::int32_t level;
-  boost::int64_t offset;
+  int32 level;
+  int64 offset;
 
   TileIndex(int level_init, long long offset_init) :
     level(level_init), offset(offset_init) {}
@@ -84,7 +82,7 @@ struct TileIndex {
   static double level_to_duration(int level) {
     return pow(2.0, level);
   }
-
+  
   static double duration_to_level(double duration) {
     return log2(duration);
   }
@@ -101,7 +99,7 @@ struct TileIndex {
   }
 
   static TileIndex index_at_level_containing(int level, double time) {
-    return TileIndex(level, floor(time / level_to_duration(level)));
+    return TileIndex(level, (long long)floor(time / level_to_duration(level)));
   }
 
   /// Select level according to max_time-min_time, selecting tile that contains min_time, then move to parents until max_time is contained
@@ -132,7 +130,7 @@ struct TileIndex {
   // Is TileIndex ancestor of child?
   // \return true if TileIndex is parent of child, or a higher ancestor.  false if not.  false if identical to child
   bool is_ancestor_of(const TileIndex &child) const {
-    return (level > child.level) && (offset == (child.offset >> (level-child.level)));
+    return (level > child.level) && (offset == (child.offset >> (unsigned)(level-child.level)));
   }
 
   /// Return parent

@@ -1,0 +1,12 @@
+Building on Mac or Linux, 32- or 64-bit:
+
+make test
+
+Building on Windows, 32- or 64-bit:
+
+Install cygwin (cygwin.com)
+- Be sure to include g++ and make
+
+In the cygwin shell, type
+
+make test

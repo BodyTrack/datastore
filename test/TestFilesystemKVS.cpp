@@ -3,15 +3,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <sys/wait.h>
+
 // C++
 #include <map>
 #include <set>
 #include <stdexcept>
 #include <string>
 #include <vector>
-
-// BOOST
-#include <boost/thread/thread.hpp>
 
 // Local
 #include "utils.h"
@@ -70,29 +69,21 @@ void test_invalid_key(KVS &kvs, const std::string &key)
   
 }
 
-void test_read_modify_write(KVS &kvs, const std::string &key, const std::string &add, bool quiet=false)
+void test_read_modify_write(KVS &kvs, const std::string &key, const std::string &add, 
+                            int count_per_process=1)
 {
-  if (!quiet) fprintf(stderr, "test_read_modify_write(\"%s\")\n", key.c_str());
-  KVSLocker locker(kvs, key);
-  std::string val;
-  kvs.get(key, val);
-  val = add + val;
-  kvs.set(key, val);
-  check[key]=val;
-  // Sleep 0-10 msec
-  //usleep(random()%10000);
-  std::string test;
-  kvs.get(key, test);
-  tassert(val==test);
-}
-
-void test_read_modify_write_thread(KVS *kvs, const std::string &key, const std::string &add)
-{
-  try {
-    test_read_modify_write(*kvs, key, add, true);
-  } catch (std::runtime_error &err) {
-    fprintf(stderr, "test_read_modify_write_thread caught error '%s'\n", err.what());
-    tassert(0);
+  for (int i = 0; i < count_per_process; i ++) {
+    KVSLocker locker(kvs, key);
+    std::string val;
+    kvs.get(key, val);
+    val = add + val;
+    kvs.set(key, val);
+    check[key]=val;
+    // Sleep 0-10 msec
+    //usleep(random()%10000);
+    std::string test;
+    kvs.get(key, test);
+    tassert(val==test);
   }
 }
 
@@ -102,26 +93,38 @@ void test_multithreaded_locking(KVS &kvs)
   std::string key="abcdef.ghijkl";
   kvs.set(key, "");
   check[key]="";
-  unsigned nthreads=50;
-  std::vector<boost::thread*> threads;
-  fprintf(stderr, "Making %d threads", nthreads);
-  for (unsigned int i=0; i<nthreads; i++) {
-    threads.push_back(new boost::thread(test_read_modify_write_thread, &kvs, key, std::string(1, (char)i)));
-    fprintf(stderr, ".");
+  unsigned nprocesses = 50;
+  int count_per_process = 25;
+  std::vector<int> pids;
+  fprintf(stderr, "Making %d processes", nprocesses);
+  for (unsigned int i=0; i<nprocesses; i++) {
+    int child = fork();
+    if (child) {
+      pids.push_back(child);
+    } else {
+      test_read_modify_write(kvs, key, std::string(1, (char)i), count_per_process);
+      fprintf(stderr, ".");
+      exit(0);
+    }
   }
   fprintf(stderr, "done\n");
-  fprintf(stderr, "Joining %d threads", nthreads);
-  for (unsigned int i=0; i<nthreads; i++) {
-    threads[i]->join();
-    delete threads[i];
+  fprintf(stderr, "Waiting for %d processes", nprocesses);
+  for (unsigned int i=0; i < nprocesses; i++) {
+    int stat = 0;
+    tassert(waitpid(pids[i], &stat, 0) == pids[i]);
+    tassert(stat == 0);
     fprintf(stderr, ".");
   }
   fprintf(stderr, "done\n");
   std::string val;
   kvs.get(key, val);
-  tassert(val.size() == nthreads);
-  for (unsigned int i=0; i<nthreads; i++) {
-    tassert(val.find(std::string(1, (char)i)) != std::string::npos);
+  tassert_equals(val.size(), nprocesses * count_per_process);
+  std::vector<int> count(nprocesses);
+  for (unsigned int i=0; i < val.size(); i++) {
+    count[val[i]]++;
+  }
+  for (unsigned int i=0; i<nprocesses; i++) {
+    tassert_equals(count[i], count_per_process);
   }
 }
 
@@ -153,9 +156,16 @@ std::string generate_val(size_t len)
   return ret;
 }
 
+void sys_check(const char *cmd) {
+  if (system(cmd)) {
+    fprintf(stderr, "Executing '%s' failed, aborting\n", cmd);
+    exit(1);
+  }
+}
+
 int main(int argc, char **argv) {
-  system("rm -rf test.kvs");
-  system("mkdir test.kvs");
+  sys_check("rm -rf test.kvs");
+  sys_check("mkdir test.kvs");
   {
     FilesystemKVS kvs("test.kvs");
     
@@ -198,11 +208,13 @@ int main(int argc, char **argv) {
     test_read_modify_write(kvs, "abc.def.ghi.jkl", "123");
     test_read_modify_write(kvs, "abc.def.ghi.jkl.mno", "123");
 
-    // Test multithreaded locking
-    test_multithreaded_locking(kvs);
-    
     // Double-check all keys
     confirm_all_keys(kvs);
+
+    // Test multithreaded locking
+    test_multithreaded_locking(kvs);
+
+    // confirm_all_keys will no longer work since we wrote from multiple processes
   }
   fprintf(stderr, "Tests succeeded\n");
   return 0;

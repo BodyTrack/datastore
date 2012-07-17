@@ -98,8 +98,8 @@ int execute(int argc, char **argv) {
     }
     
     ParseInfo info;
-    std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > > numeric_data;
-    std::map<std::string, boost::shared_ptr<std::vector<DataSample<std::string> > > > string_data;
+    std::map<std::string, simple_shared_ptr<std::vector<DataSample<double> > > > numeric_data;
+    std::map<std::string, simple_shared_ptr<std::vector<DataSample<std::string> > > > string_data;
     std::vector<ParseError> errors;
 
     std::string this_format;
@@ -134,11 +134,11 @@ int execute(int argc, char **argv) {
     std::map<std::string, DataRanges> channel_ranges;
     Range import_time_range;
     
-    for (std::map<std::string, boost::shared_ptr<std::vector<DataSample<double> > > >::iterator i =
+    for (std::map<std::string, simple_shared_ptr<std::vector<DataSample<double> > > >::iterator i =
            numeric_data.begin(); i != numeric_data.end(); ++i) {
       
       std::string channel_name = i->first;
-      boost::shared_ptr<std::vector<DataSample<double> > > samples = i->second;
+      simple_shared_ptr<std::vector<DataSample<double> > > samples = i->second;
       std::sort(samples->begin(), samples->end(), DataSample<double>::time_lessthan);
       
       log_f("import: %.6f: %s %zd numeric samples", (*samples)[0].time, channel_name.c_str(), samples->size());
@@ -162,11 +162,11 @@ int execute(int argc, char **argv) {
       }
     }  
     
-    for (std::map<std::string, boost::shared_ptr<std::vector<DataSample<std::string> > > >::iterator i =
+    for (std::map<std::string, simple_shared_ptr<std::vector<DataSample<std::string> > > >::iterator i =
            string_data.begin(); i != string_data.end(); ++i) {
       
       std::string channel_name = i->first;
-      boost::shared_ptr<std::vector<DataSample<std::string> > > samples = i->second;
+      simple_shared_ptr<std::vector<DataSample<std::string> > > samples = i->second;
       std::sort(samples->begin(), samples->end(), DataSample<std::string>::time_lessthan);
       
       log_f("%.6f: %s %zd textual samples", (*samples)[0].time, channel_name.c_str(), samples->size());

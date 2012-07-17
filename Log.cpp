@@ -4,9 +4,6 @@
 // C
 #include <stdio.h>
 
-// Boost
-#include <boost/thread.hpp>
-
 // Local
 #include "utils.h"
 
@@ -16,7 +13,6 @@
 static std::string log_prefix;
 
 static std::vector<std::string> log_record;
-static boost::mutex log_record_mutex;
 
 bool record_log = true;
 
@@ -29,7 +25,7 @@ void log_f(const char *fmt, ...) {
   msg = string_printf("%.6f %s%s\n", doubletime(), log_prefix.c_str(), msg.c_str());
   fprintf(stderr, "%s", msg.c_str());
   if (record_log) {
-    boost::mutex::scoped_lock lock(log_record_mutex);
+    // Add mutex here for multithreading
     log_record.push_back(msg);
   }
 }
@@ -39,7 +35,7 @@ void set_log_prefix(const std::string &prefix) {
 }
 
 std::string recorded_log() {
-  boost::mutex::scoped_lock lock(log_record_mutex);
+  // Add mutex here for multithreading
   size_t len = 0;
   for (unsigned i = 0; i < log_record.size(); i++) len += log_record[i].length();
   std::string ret;

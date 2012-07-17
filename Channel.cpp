@@ -16,21 +16,24 @@
 
 int Channel::total_tiles_read;
 int Channel::total_tiles_written;
+int Channel::verbosity;
 
 /// Create channel reference to KVS
 /// \param owner_id  Owner of channel
 /// \param name      Full name of channel (may be of form device_nickname.channel_name)
 Channel::Channel(KVS &kvs, int owner_id, const std::string &name, size_t max_tile_size)
-  : m_kvs(kvs), m_owner_id(owner_id), m_name(name), m_max_tile_size(max_tile_size) {}
+  : m_kvs(kvs), m_owner_id(owner_id), m_name(name), m_max_tile_size(max_tile_size) {
+  if (!sizes_are_valid()) throw std::runtime_error("Wrongly-sized type");
+}
 
 /// Lock channel upon construction; if currently locked, construction will block until lock is available
 /// \param ch        Channel to lock
 Channel::Locker::Locker(const Channel &ch) : m_ch(ch), m_locker(ch.m_kvs, ch.metainfo_key()) {
-  log_f("Channel: locking %s", ch.descriptor().c_str());
+  if (verbosity) log_f("Channel: locking %s", ch.descriptor().c_str());
 }
 
 Channel::Locker::~Locker() {
-  log_f("Channel: unlocking %s", m_ch.descriptor().c_str());
+  if (verbosity) log_f("Channel: unlocking %s", m_ch.descriptor().c_str());
 }
 
 /// Read channel metainformation from KVS
@@ -44,7 +47,7 @@ bool Channel::read_info(ChannelInfo &info) const {
     assert(info_str.length() == sizeof(ChannelInfo));
     memcpy((void*)&info, (void*)info_str.c_str(), sizeof(info));
     assert(info.magic == ChannelInfo::MAGIC);
-    log_f("Channel: read_info %s: root tile=%s", descriptor().c_str(), info.nonnegative_root_tile_index.to_string().c_str());
+    if (verbosity) log_f("Channel: read_info %s: root tile=%s", descriptor().c_str(), info.nonnegative_root_tile_index.to_string().c_str());
     return true;
   } else {
     return false;
@@ -58,7 +61,7 @@ void Channel::write_info(const ChannelInfo &info) {
   assert(!info.nonnegative_root_tile_index.is_null());
   std::string info_str((char*)&info, (char*)((&info)+1));
   m_kvs.set(metainfo_key(), info_str);
-  log_f("Channel: write_info %s : root tile=%s", descriptor().c_str(), info.nonnegative_root_tile_index.to_string().c_str());
+  if (verbosity) log_f("Channel: write_info %s : root tile=%s", descriptor().c_str(), info.nonnegative_root_tile_index.to_string().c_str());
 }
 
 bool Channel::has_tile(TileIndex ti) const {
@@ -70,8 +73,8 @@ bool Channel::read_tile(TileIndex ti, Tile &tile) const {
   if (!m_kvs.get(tile_key(ti), binary)) return false;
   total_tiles_read++;
   tile.from_binary(binary);
-  log_f("Channel: read_tile %s %s: %s", 
-	descriptor().c_str(), ti.to_string().c_str(), tile.summary().c_str());
+  if (verbosity) log_f("Channel: read_tile %s %s: %s", 
+                       descriptor().c_str(), ti.to_string().c_str(), tile.summary().c_str());
   return true;
 }
 
@@ -81,14 +84,14 @@ void Channel::write_tile(TileIndex ti, const Tile &tile) {
   //assert(binary.size() <= m_max_tile_size);
   m_kvs.set(tile_key(ti), binary);
   total_tiles_written++;
-  log_f("Channel: write_tile %s %s: %s", 
-	descriptor().c_str(), ti.to_string().c_str(), tile.summary().c_str());
+  if (verbosity) log_f("Channel: write_tile %s %s: %s", 
+                       descriptor().c_str(), ti.to_string().c_str(), tile.summary().c_str());
 }
 
 bool Channel::delete_tile(TileIndex ti) {
   return m_kvs.del(tile_key(ti));
-  log_f("Channel: delete_tile %s %s", 
-	descriptor().c_str(), ti.to_string().c_str());
+  if (verbosity) log_f("Channel: delete_tile %s %s", 
+                       descriptor().c_str(), ti.to_string().c_str());
 }
 
 void Channel::create_tile(TileIndex ti) {
@@ -168,9 +171,9 @@ void Channel::add_data_internal(const std::vector<DataSample<T> > &data, DataRan
     TileIndex new_root = split_tile_if_needed(ti, tile);
     if (new_root != TileIndex::null()) {
       assert(ti == TileIndex::nonnegative_all());
-      log_f("Channel: %s changing root from %s to %s",
-            descriptor().c_str(), ti.to_string().c_str(),
-            new_root.to_string().c_str());
+      if (verbosity) log_f("Channel: %s changing root from %s to %s",
+                           descriptor().c_str(), ti.to_string().c_str(),
+                           new_root.to_string().c_str());
       info.nonnegative_root_tile_index = new_root;
       delete_tile(ti); // Delete old root
       ti = new_root;
@@ -205,7 +208,7 @@ void Channel::read_data(std::vector<DataSample<double> > &data, double begin, do
   bool success = read_info(info);
   if (!success) {
     // Channel doesn't yet exist;  no data
-    log_f("read_data: can't read info");
+    if (verbosity) log_f("read_data: can't read info");
     return;
   }
   bool first_tile = true;
@@ -214,7 +217,7 @@ void Channel::read_data(std::vector<DataSample<double> > &data, double begin, do
     TileIndex ti = find_lowest_child_overlapping_time(info.nonnegative_root_tile_index, time);
     if (ti.is_null()) {
       // No tiles; no more data
-      log_f("read_data: can't read tile");
+      if (verbosity) log_f("read_data: can't read tile");
       return;
     }
 
@@ -253,14 +256,14 @@ TileIndex Channel::split_tile_if_needed(TileIndex ti, Tile &tile) {
   if (tile.binary_length() <= m_max_tile_size) return new_root_index;
   Tile children[2];
   TileIndex child_indexes[2];
-  log_f("split_tile_if_needed: splitting tile %s", ti.to_string().c_str());
+  if (verbosity) log_f("split_tile_if_needed: splitting tile %s", ti.to_string().c_str());
 
   // If we're splitting an "all" tile, it means that until now the channel has only had one tile's worth of
   // data, and that a proper root tile location couldn't be selected.  Select a new root tile now.
   if (ti.is_nonnegative_all()) {
     // TODO: this breaks if all samples are at one time
     ti = new_root_index = TileIndex::index_containing(Range(tile.first_sample_time(), tile.last_sample_time()));
-    log_f("split_tile_if_needed: Moving root tile to %s", ti.to_string().c_str());
+    if (verbosity) log_f("split_tile_if_needed: Moving root tile to %s", ti.to_string().c_str());
   }
   
   child_indexes[0]= ti.left_child();
@@ -301,7 +304,7 @@ void combine_samples(unsigned int n_samples,
       
       const DataSample<T> &sample = child[i];
       assert(parent_index.contains_time(sample.time));
-      unsigned bin = floor(parent_index.position(sample.time) * n_samples);
+      unsigned bin = (unsigned) floor(parent_index.position(sample.time) * n_samples);
       assert(bin < n_samples);
       n++;
       bins[bin] += sample;
@@ -329,10 +332,10 @@ void Channel::create_parent_tile_from_children(TileIndex parent_index, Tile &par
   // when do we want to show original values?
   // when do we want to do a real low-pass filter?
   // do we need to filter more than just the child tiles? e.g. gaussian beyond the tile border
-  log_f("Channel: creating parent %s from children %s, %s",
-        parent_index.to_string().c_str(),
-        parent_index.left_child().to_string().c_str(),
-        parent_index.right_child().to_string().c_str());
+  if (verbosity) log_f("Channel: creating parent %s from children %s, %s",
+                       parent_index.to_string().c_str(),
+                       parent_index.left_child().to_string().c_str(),
+                       parent_index.right_child().to_string().c_str());
 
   combine_samples(BT_CHANNEL_DOUBLE_SAMPLES, parent_index, parent.double_samples, children[0].double_samples, children[1].double_samples);
   if (children[0].double_samples.size() + children[1].double_samples.size()) assert(parent.double_samples.size());
@@ -368,7 +371,7 @@ bool Channel::read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, 
   ChannelInfo info;
   bool success = read_info(info);
   if (!success) {
-    log_f("read_tile_or_closest_ancestor: can't read info");
+    if (verbosity) log_f("read_tile_or_closest_ancestor: can't read info");
     return false;
   }
   TileIndex root = info.nonnegative_root_tile_index;
@@ -474,7 +477,6 @@ void Channel::get_subchannel_names(KVS &kvs, int owner_id,
 TileIndex Channel::find_lowest_child_overlapping_time(TileIndex ti, double t) const {
   assert(!ti.is_null());
   // Start at root tile and move downwards
-  TileIndex orig = ti;
 
   while (1) {
     // Select correct child
@@ -490,7 +492,6 @@ TileIndex Channel::find_lowest_child_overlapping_time(TileIndex ti, double t) co
 TileIndex Channel::find_child_overlapping_time(TileIndex ti, double t, int desired_level) const {
   assert(!ti.is_null());
   // Start at root tile and move downwards
-  TileIndex orig = ti;
 
   while (ti.level > desired_level) {
     // Select correct child
@@ -505,7 +506,6 @@ TileIndex Channel::find_child_overlapping_time(TileIndex ti, double t, int desir
 
 TileIndex Channel::find_lowest_successive_tile(TileIndex root, TileIndex ti) const {
   // Move upwards until parent has a different end time
-  TileIndex orig = ti;
   while (1) {
     if (ti.parent().is_null()) return TileIndex::null();
     if (ti.parent().end_time() != ti.end_time()) break;
@@ -523,7 +523,6 @@ TileIndex Channel::find_lowest_successive_tile(TileIndex root, TileIndex ti) con
 
 TileIndex Channel::find_successive_tile(TileIndex root, TileIndex ti, int desired_level) const {
   // Move upwards until parent has a different end time
-  TileIndex orig = ti;
   while (1) {
     if (ti.parent().is_null()) return TileIndex::null();
     if (ti.parent().end_time() != ti.end_time()) break;

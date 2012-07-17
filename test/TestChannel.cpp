@@ -3,8 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// BOOST
-#include <boost/thread/thread.hpp>
+#include <sys/wait.h>
 
 // Local
 #include "FilesystemKVS.h"
@@ -140,34 +139,40 @@ void test_samples_multiple_tiles(Channel &ch, double begin_time, size_t num_samp
   fprintf(stderr, "test_samples_multiple_tiles(%zd) succeeded\n", num_samples);
 }
 
-void test_add_data_thread(std::vector<DataSample<double> > data)
+void test_add_data_process(std::vector<DataSample<double> > data)
 {
   FilesystemKVS kvs("channelstore_test.kvs");
-  Channel ch(kvs, 2, "threadtest");
+  Channel ch(kvs, 2, "processtest");
   ch.add_data(data);
 }
 
-void test_subsampling_threads()
+void test_subsampling_processs()
 {
-  int nthreads = 100;
-  int samples_per_thread = 1000;
-  std::vector<boost::thread*> threads;
-  for (int thread = 0; thread < nthreads; thread++) {
-    std::vector<DataSample<double> > data(samples_per_thread);
-    for (int i = 0; i < samples_per_thread; i++) {
-      data[i] = DataSample<double>(i+thread*samples_per_thread, 33);
+  int nprocesses = 100;
+  int samples_per_process = 1000;
+  std::vector<int> pids;
+  for (int process = 0; process < nprocesses; process++) {
+    std::vector<DataSample<double> > data(samples_per_process);
+    for (int i = 0; i < samples_per_process; i++) {
+      data[i] = DataSample<double>(i+process*samples_per_process, 33);
     }
-    threads.push_back(new boost::thread(test_add_data_thread, data));
+    int pid = fork();
+    if (pid) {
+      pids.push_back(pid);
+    } else {
+      test_add_data_process(data);
+      exit(0);
+    }
   }
-  for (unsigned int i=0; i<threads.size(); i++) {
-    threads[i]->join();
-    delete threads[i];
+  for (int i=0; i < nprocesses; i++) {
+    int stat = 0;
+    tassert(waitpid(pids[i], &stat, 0) == pids[i]);
+    tassert(stat == 0);
   }
-  
   // Fetch top-level tile
   Tile tile;
   FilesystemKVS kvs("channelstore_test.kvs");
-  Channel ch(kvs, 2, "threadtest");
+  Channel ch(kvs, 2, "processtest");
   
   tassert(ch.read_tile(TileIndex(17, 0), tile));
 
@@ -178,14 +183,21 @@ void test_subsampling_threads()
     tassert(fabs(tile.double_samples[i].value - 33) < 1e-10);
   }
   tassert_approx_equals(a.get_sample().time, 99999*.5);
-  tassert_approx_equals(a.get_sample().weight, nthreads * samples_per_thread);
+  tassert_approx_equals(a.get_sample().weight, nprocesses * samples_per_process);
   tassert_approx_equals(a.get_sample().value, 33);
   tassert_approx_equals(a.get_sample().stddev, 0);
 }
 
+void sys_check(const char *cmd) {
+  if (system(cmd)) {
+    fprintf(stderr, "Executing '%s' failed, aborting\n", cmd);
+    exit(1);
+  }
+}
+
 int main(int argc, char **argv) {
-  system("rm -rf channelstore_test.kvs");
-  system("mkdir channelstore_test.kvs");
+  sys_check("rm -rf channelstore_test.kvs");
+  sys_check("mkdir channelstore_test.kvs");
   FilesystemKVS kvs("channelstore_test.kvs");
   kvs.set_verbosity(0);
 
@@ -312,7 +324,7 @@ int main(int argc, char **argv) {
   test_subsampling_stddev(kvs);
   test_subsampling_string(kvs);
 
-  test_subsampling_threads();
+  test_subsampling_processs();
 
   fprintf(stderr, "Tests succeeded\n");
   return 0;

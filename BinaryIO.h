@@ -6,12 +6,10 @@
 #include <string>
 #include <vector>
 
-// BOOST
-#include <boost/cstdint.hpp>
-
 // Local
 #include "DataSample.h"
 #include "utils.h"
+#include "sizes.h"
 
 class BinaryWriter {
 private:
@@ -32,12 +30,12 @@ public:
   // vector<T>
   template <class T>
   void write(const std::vector<T> &v) {
-    write((boost::uint32_t) (v.size() * sizeof(T)));
+    write((uint32) (v.size() * sizeof(T)));
     for (unsigned i = 0; i < v.size(); i++) write(v[i]);
   }
   template <class T>
   static size_t write_length(const std::vector<T> &v) {
-    size_t ret = write_length((boost::uint32_t)0);
+    size_t ret = write_length((uint32)0);
     for (unsigned i = 0; i < v.size(); i++) ret += write_length(v[i]);
     return ret;
   }
@@ -73,7 +71,7 @@ public:
   // vector<T>
   template <class T>
   void read(std::vector<T> &v) {
-    boost::uint32_t len;
+    uint32 len;
     read(len);
     tassert(len % sizeof(T) == 0);
     v.resize(len / sizeof(T));
