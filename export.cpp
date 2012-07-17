@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <strings.h>
+#include <unistd.h>
 
 // Local
 #include "Channel.h"

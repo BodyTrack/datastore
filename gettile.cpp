@@ -8,6 +8,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 
 // Local
 #include "Binrec.h"

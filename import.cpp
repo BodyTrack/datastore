@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
+#include <unistd.h>
 
 // Local
 #include "Binrec.h"
