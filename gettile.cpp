@@ -13,6 +13,7 @@
 // Local
 #include "Binrec.h"
 #include "Channel.h"
+#include "fft.h"
 #include "FilesystemKVS.h"
 #include "ImportBT.h"
 #include "Log.h"
@@ -22,6 +23,10 @@ void usage()
 {
   std::cerr << "Usage:\n";
   std::cerr << "gettile store.kvs UID devicenickname.channel level offset\n";
+#if FFT_SUPPORT
+  std::cerr << "  If the string '.DFT' is appended to the channel name, the discrete\n";
+  std::cerr << "  Fourier transform of the data is returned instead\n";
+#endif /* FFT_SUPPORT */
   std::cerr << "Exiting...\n";
   exit(1);
 }
@@ -92,6 +97,14 @@ int main(int argc, char **argv)
   
   if (!*argptr) usage();
   std::string full_channel_name = *argptr++;
+#if FFT_SUPPORT
+  bool writing_fft = false;
+  size_t fftpos = full_channel_name.rfind(".DFT");
+  if (fftpos != std::string::npos) {
+    full_channel_name = full_channel_name.substr(0, fftpos);
+    writing_fft = true;
+  }
+#endif /* FFT_SUPPORT */
 
   if (!*argptr) usage();
   int tile_level = atoi(*argptr++);
@@ -131,6 +144,26 @@ int main(int argc, char **argv)
 
   bool doubles_binned, strings_binned, comments_binned;
   read_tile_samples(store, uid, full_channel_name, requested_index, client_tile_index, double_samples, doubles_binned);
+#if FFT_SUPPORT
+  if (writing_fft) {
+    std::vector<double> fft;
+    take_fft(double_samples, requested_index, client_tile_index, fft);
+    int num_values;
+    std::string fft_repr = fft_to_string(fft, num_values);
+
+    // JSON tile to send back to the client includes some of the same
+    // information as a non-DFT tile
+    Json::Value tile(Json::objectValue);
+    tile["level"] = Json::Value(tile_level);
+    // See discussion below for reason to cast tile_offset
+    // from long long to double
+    tile["offset"] = Json::Value((double)tile_offset);
+    tile["num_values"] = Json::Value(num_values);
+    tile["dft"] = Json::Value(fft_repr);
+    std::cout << Json::FastWriter().write(tile) << std::endl;
+    return 0;
+  }
+#endif /* FFT_SUPPORT */
   read_tile_samples(store, uid, full_channel_name, requested_index, client_tile_index, string_samples, strings_binned);
   read_tile_samples(store, uid, full_channel_name+"._comment", requested_index, client_tile_index, comments, comments_binned);
   string_samples.insert(string_samples.end(), comments.begin(), comments.end());

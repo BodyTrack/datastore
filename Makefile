@@ -8,15 +8,22 @@ JSON_SRCS = \
 	$(JSON_DIR)/src/lib_json/json_reader.cpp \
 	$(JSON_DIR)/src/lib_json/json_writer.cpp
 
-SRCS = BinaryIO.cpp Binrec.cpp Channel.cpp crc32.cpp FilesystemKVS.cpp KVS.cpp Log.cpp Tile.cpp utils.cpp $(JSON_SRCS)
+SRCS = BinaryIO.cpp Binrec.cpp Channel.cpp crc32.cpp fft.cpp \
+	FilesystemKVS.cpp KVS.cpp Log.cpp Tile.cpp utils.cpp $(JSON_SRCS)
 
-INCLUDES = BinaryIO.h Binrec.h Channel.h ChannelInfo.h crc32.h DataSample.h FilesystemKVS.h KVS.h Log.h Tile.h TileIndex.h
+INCLUDES = BinaryIO.h Binrec.h Channel.h ChannelInfo.h crc32.h \
+	DataSample.h fft.h FilesystemKVS.h KVS.h Log.h Tile.h TileIndex.h
 
 ifeq ($(shell uname -s),Linux)
   LDFLAGS = -static
 else
   # Need to build boost libs using macports!
   LDFLAGS =
+endif
+
+ifneq ($(strip $(FFT_SUPPORT)),)
+CPPFLAGS += -DFFT_SUPPORT
+LDFLAGS += -lnfft3 -lfftw3
 endif
 
 # SOURCES=tilegen.cpp mysql_common.cpp MysqlQuery.cpp Channel.cpp Logrec.cpp Tile.cpp utils.cpp Log.cpp

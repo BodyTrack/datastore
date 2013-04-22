@@ -99,3 +99,41 @@ If the amount of storage required to store N samples varies by a factor of 32, h
 1Gsample/day x 1B = 1GB/day = 0.05 / day
 1Gsample/day x 32B = 32GB/day = 1.50 / day
 
+
+-------------------------
+To install with optional FFT support via the NFFTv3 library, which
+is under the GPLv2 license:
+
+Download and install NFFT, version 3 (as of the time of this writing,
+NFFT 3.2.2 was the most recent version, and is also the version which
+was used for testing during development.  You might try a newer version
+if it's available):
+
+$ wget http://www-user.tu-chemnitz.de/~potts/nfft/download/nfft-3.2.2.tar.gz
+$ tar xvzf nfft-3.2.2.tar.gz
+$ cd nfft-3.2.2
+$ ./configure
+$ make
+$ sudo make install
+$ cd ..
+$ rm -r nfft-3.2.2 nfft-3.2.2.tar.gz
+
+This should install the NFFT library on your system.  Then, to opt in
+to NFFT support, add FFT_SUPPORT=1 to the make command line
+(the Makefile compiles with FFT support whenever FFT_SUPPORT is set to
+a non-empty string).  In other words, replace "make target" with
+"make target FFT_SUPPORT=1" for whichever choice of target you would
+have used normally.  For example, instead of "make test", execute
+
+$ make test FFT_SUPPORT=1
+
+You will know that your freshly built binaries support the Fourier
+transform by running
+
+$ ./gettile
+
+If the help message contains a sentence mentioning the DFT or Fourier
+transform, such as "If the string '.DFT' is appended to the channel name,
+the discrete Fourier transform of the data is returned instead,"
+then of course your binaries have been compiled with FFT support.
+
