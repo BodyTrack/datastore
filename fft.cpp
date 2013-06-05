@@ -19,6 +19,8 @@
 #include "fft.h"
 #include "TileIndex.h"
 
+#define NRESULTS 25
+
 // When we convert to a string to pass to the client, we discretize
 // into NUM_FFT_STEPS steps.
 #define NUM_FFT_STEPS 256
@@ -37,7 +39,7 @@ void take_fft(const std::vector<DataSample<double> > &samples,
     return;
 
   nfft_plan plan;
-  nfft_init_1d(&plan, samples.size(), samples.size());
+  nfft_init_1d(&plan, NRESULTS, samples.size());
 
   const double min_time = find_min_time(samples);
   const double max_time = find_max_time(samples);
@@ -59,6 +61,32 @@ void take_fft(const std::vector<DataSample<double> > &samples,
   }
 
   nfft_finalize(&plan);
+}
+
+void shift_fft(const std::vector<double> &fft,
+    std::vector<double> &shifted,
+    int &num_values) {
+  num_values = NUM_FFT_STEPS;
+
+  std::vector<double> fft_copy; // Copy of everything but the DC channel
+  for (unsigned i = 0; i < fft.size() - 1; i++)
+      fft_copy.push_back(fft[i]);
+
+  double max_value = std::accumulate(fft_copy.begin(), fft_copy.end(),
+      fft_copy[0], std::max<double>);
+  if (max_value <= 0.0) {
+    // Push all the values verbatim (they should all be 0) rather than
+    // divide by 0
+    for (int i = fft_copy.size() - 1; i >= 0; i--)
+      shifted.push_back(fft_copy[i]);
+  } else {
+    for (int i = fft_copy.size() - 1; i >= 0; i--) {
+      // The set of possible values is [0, 1, ..., NUM_FFT_STEPS - 1],
+      // for a total of NUM_FFT_STEPS potential items
+      double v = (fft_copy[i] / max_value) * (NUM_FFT_STEPS - 1);
+      shifted.push_back(v);
+    }
+  }
 }
 
 std::string fft_to_string(const std::vector<double> &fft, int &num_values) {

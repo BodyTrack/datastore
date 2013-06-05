@@ -15,6 +15,10 @@ void take_fft(const std::vector<DataSample<double> > &samples,
         const TileIndex &client_tile_index,
         std::vector<double> &fft);
 
+void shift_fft(const std::vector<double> &fft,
+    std::vector<double> &shifted,
+    int &num_values);
+
 std::string fft_to_string(const std::vector<double> &fft, int &num_values);
 
 #endif /* FFT_SUPPORT */

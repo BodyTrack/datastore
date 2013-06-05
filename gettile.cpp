@@ -146,10 +146,10 @@ int main(int argc, char **argv)
   read_tile_samples(store, uid, full_channel_name, requested_index, client_tile_index, double_samples, doubles_binned);
 #if FFT_SUPPORT
   if (writing_fft) {
-    std::vector<double> fft;
+    std::vector<double> fft, shifted;
     take_fft(double_samples, requested_index, client_tile_index, fft);
     int num_values;
-    std::string fft_repr = fft_to_string(fft, num_values);
+    shift_fft(fft, shifted, num_values);
 
     // JSON tile to send back to the client includes some of the same
     // information as a non-DFT tile
@@ -159,7 +159,9 @@ int main(int argc, char **argv)
     // from long long to double
     tile["offset"] = Json::Value((double)tile_offset);
     tile["num_values"] = Json::Value(num_values);
-    tile["dft"] = Json::Value(fft_repr);
+    tile["dft"] = Json::Value(Json::arrayValue);
+    for (unsigned i = 0; i < shifted.size(); i++)
+      tile["dft"].append(Json::Value(shifted[i]));
     std::cout << Json::FastWriter().write(tile) << std::endl;
     return 0;
   }
