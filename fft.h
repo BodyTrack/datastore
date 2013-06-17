@@ -10,16 +10,16 @@
 #include "DataSample.h"
 #include "TileIndex.h"
 
-void take_fft(const std::vector<DataSample<double> > &samples,
-        const TileIndex &requested_index,
-        const TileIndex &client_tile_index,
-        std::vector<double> &fft);
+double min_time_required(const TileIndex &requested_index);
+double max_time_required(const TileIndex &requested_index);
 
-void shift_fft(const std::vector<double> &fft,
-    std::vector<double> &shifted,
+void windowed_fft(const std::vector<DataSample<double> > &samples,
+    const TileIndex &requested_index,
+    std::vector<std::vector<double> > &fft);
+
+void present_fft(const std::vector<std::vector<double> > &fft,
+    std::vector<std::vector<double> > &shifted,
     int &num_values);
-
-std::string fft_to_string(const std::vector<double> &fft, int &num_values);
 
 #endif /* FFT_SUPPORT */
 

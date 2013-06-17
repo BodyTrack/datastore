@@ -143,13 +143,16 @@ int main(int argc, char **argv)
   std::vector<DataSample<std::string> > comments;
 
   bool doubles_binned, strings_binned, comments_binned;
+  // TODO: If writing FFT, ***get more data***
+  // TODO: Use min_time_required and max_time_required, get max-res data
   read_tile_samples(store, uid, full_channel_name, requested_index, client_tile_index, double_samples, doubles_binned);
 #if FFT_SUPPORT
   if (writing_fft) {
-    std::vector<double> fft, shifted;
-    take_fft(double_samples, requested_index, client_tile_index, fft);
+    std::vector<std::vector<double> > fft, shifted;
     int num_values;
-    shift_fft(fft, shifted, num_values);
+
+    windowed_fft(double_samples, requested_index, fft);
+    present_fft(fft, shifted, num_values);
 
     // JSON tile to send back to the client includes some of the same
     // information as a non-DFT tile
@@ -160,8 +163,13 @@ int main(int argc, char **argv)
     tile["offset"] = Json::Value((double)tile_offset);
     tile["num_values"] = Json::Value(num_values);
     tile["dft"] = Json::Value(Json::arrayValue);
-    for (unsigned i = 0; i < shifted.size(); i++)
-      tile["dft"].append(Json::Value(shifted[i]));
+    for (unsigned window_id = 0; window_id < shifted.size(); window_id++) {
+      Json::Value window(Json::arrayValue);
+      for (unsigned i = 0; i < shifted[window_id].size(); i++)
+        window.append(shifted[window_id][i]);
+
+      tile["dft"].append(window);
+    }
     std::cout << Json::FastWriter().write(tile) << std::endl;
     return 0;
   }

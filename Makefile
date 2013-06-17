@@ -23,7 +23,7 @@ endif
 
 ifneq ($(strip $(FFT_SUPPORT)),)
 CPPFLAGS += -DFFT_SUPPORT
-LDFLAGS += -lnfft3 -lfftw3
+LDFLAGS += -lfftw3
 endif
 
 # SOURCES=tilegen.cpp mysql_common.cpp MysqlQuery.cpp Channel.cpp Logrec.cpp Tile.cpp utils.cpp Log.cpp
