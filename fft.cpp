@@ -20,11 +20,14 @@
 #include "fft.h"
 #include "TileIndex.h"
 
+// Each tile is divided into 256 windows
+#define NWINDOWS 256
+
 // Each window is four times the width of the included area
 #define WINDOW_RATIO 4.0
 #define WINDOW_EXTENSION_RATIO (((WINDOW_RATIO) / 2.0) - 0.5)
 
-#define SAMPLE_RATE_HERTZ 10.0
+#define SAMPLE_RATE_HERTZ MAX_SAMPLE_RATE_HERTZ
 #define SAMPLE_TIME_SECONDS (1.0 / SAMPLE_RATE_HERTZ)
 
 #define MAX_NUM_SAMPLES 100000
@@ -32,9 +35,10 @@
 #define FREQUENCY_CUTOFF 1000
 #define NUM_BINNED_FREQUENCIES 1000
 
-// When we convert to a string to pass to the client, we discretize
-// into NUM_FFT_STEPS steps.
-#define NUM_FFT_STEPS 256
+// For assertions
+#define EPSILON 0.01
+#define WITHIN_EPSILON(a, b) \
+    (abs((a) - (b)) < EPSILON)
 
 // Helper function declarations
 inline double interp_time(const int interp_idx,
@@ -46,7 +50,6 @@ void fill_by_bin(const std::vector<double> &nums,
     const unsigned int n,
     const unsigned int nbins,
     std::vector<double> &binned);
-inline unsigned min(unsigned a, unsigned b);
 double average_bin(const std::vector<double> &nums,
     const unsigned int start_idx,
     const unsigned int binsize);
@@ -69,19 +72,23 @@ void windowed_fft(const std::vector<DataSample<double> > &samples,
   if (samples.size() == 0)
     return;
 
-  for (unsigned window_id = 0; window_id < WINDOW_RATIO; window_id++) {
+  for (unsigned window_id = 0; window_id < NWINDOWS; window_id++) {
+    double own_duration = client_tile_index.duration() / NWINDOWS;
+    assert (own_duration > 0);
     double own_start_time = client_tile_index.start_time()
-        + window_id * client_tile_index.duration() / WINDOW_RATIO;
+        + window_id * own_duration;
     double own_end_time = client_tile_index.start_time()
-        + (window_id + 1) * client_tile_index.duration() / WINDOW_RATIO;
+        + (window_id + 1) * own_duration;
+    assert (own_end_time > own_start_time);
     double start_time = own_start_time
-        - client_tile_index.duration() * WINDOW_EXTENSION_RATIO;
+        - own_duration * WINDOW_EXTENSION_RATIO;
     double end_time = own_end_time
-        + client_tile_index.duration() * WINDOW_EXTENSION_RATIO;
+        + own_duration * WINDOW_EXTENSION_RATIO;
 
     double window_duration = end_time - start_time;
+    assert (WITHIN_EPSILON(own_duration, window_duration / WINDOW_RATIO));
     int64 raw_num_interp = (int64)ceil(window_duration * SAMPLE_RATE_HERTZ);
-    int num_interp = raw_num_interp > MAX_NUM_SAMPLES ? MAX_NUM_SAMPLES : (int)num_interp;
+    int num_interp = (int)std::min<int64>(raw_num_interp, (int64)MAX_NUM_SAMPLES);
 
     double *interp = (double *)calloc(num_interp, sizeof(double));
     assert (interp != NULL);
@@ -159,22 +166,26 @@ inline double interp_time(const int interp_idx,
   return (interp_idx * window_duration / num_interp) + start_time;
 }
 
+// Transforms the given FFT to get a reasonably sized tile,
+// which is not too big to send over the wire
 void present_fft(const std::vector<std::vector<double> > &fft,
     std::vector<std::vector<double> > &shifted,
     int &num_values) {
   num_values = NUM_FFT_STEPS;
 
   for (unsigned window_id = 0; window_id < fft.size(); window_id++) {
-    std::vector<double> window; // Copy everything but the DC channel
+    std::vector<double> * window = new std::vector<double>;
+    // Copy everything but the DC channel
     for (unsigned i = 1; i < fft[window_id].size(); i++)
-      window.push_back(fft[window_id][i]);
+      window->push_back(fft[window_id][i]);
 
     // Now actually transform with binning etc. to get a reasonable tile
     std::vector<double> binned_window, shifted_window;
-    fill_by_bin(window, FREQUENCY_CUTOFF, NUM_BINNED_FREQUENCIES, binned_window);
+    fill_by_bin(*window, FREQUENCY_CUTOFF,
+        NUM_BINNED_FREQUENCIES, binned_window);
     double max_value = std::accumulate( // Take the max with a fold
-        binned_window.begin(), binned_window.end(),
-        binned_window[0], std::max<double>);
+        binned_window.begin(), binned_window.end(), binned_window[0],
+        [] (double a, double b) -> double { return a > b ? a : b; });
     // Now divide by the max
     if (max_value >= 0.0) {
       // Push all the values verbatim (they should all be 0) rather than
@@ -191,6 +202,9 @@ void present_fft(const std::vector<std::vector<double> > &fft,
     }
 
     shifted.push_back(shifted_window);
+
+    // Clean up
+    delete window;
   }
 }
 
@@ -198,13 +212,10 @@ void fill_by_bin(const std::vector<double> &nums,
     const unsigned int nitems,
     const unsigned int nbins,
     std::vector<double> &binned) {
-  unsigned binsize = min(nitems, nums.size()) / nbins;
+  unsigned binsize = std::max<unsigned>(1, // bin must have >= 1 elems
+      std::min<unsigned>(nitems, nums.size()) / nbins);
   for (unsigned i = 0; i < nitems && i < nums.size(); i += binsize)
     binned.push_back(average_bin(nums, i, binsize));
-}
-
-inline unsigned min(unsigned a, unsigned b) {
-  return a < b ? a : b;
 }
 
 double average_bin(const std::vector<double> &nums,

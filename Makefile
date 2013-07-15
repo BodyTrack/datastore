@@ -1,4 +1,4 @@
-CPPFLAGS = -g -Wall -Ijsoncpp-src-0.5.0-patched/include -O3
+CPPFLAGS = -g -Wall -Ijsoncpp-src-0.5.0-patched/include -O3 -std=c++0x
 # LDFLAGS = -Ljsoncpp-src-0.5.0-patched/libs -ljson_linux_libmt -static
 
 JSON_DIR = jsoncpp-src-0.5.0-patched
@@ -12,7 +12,8 @@ SRCS = BinaryIO.cpp Binrec.cpp Channel.cpp crc32.cpp fft.cpp \
 	FilesystemKVS.cpp KVS.cpp Log.cpp Tile.cpp utils.cpp $(JSON_SRCS)
 
 INCLUDES = BinaryIO.h Binrec.h Channel.h ChannelInfo.h crc32.h \
-	DataSample.h fft.h FilesystemKVS.h KVS.h Log.h Tile.h TileIndex.h
+	DataSample.h fft.h FilesystemKVS.h KVS.h Log.h MapSerializer.h \
+	Tile.h TileIndex.h
 
 ifeq ($(shell uname -s),Linux)
   LDFLAGS = -static
@@ -21,14 +22,15 @@ else
   LDFLAGS =
 endif
 
+# SOURCES=tilegen.cpp mysql_common.cpp MysqlQuery.cpp Channel.cpp Logrec.cpp Tile.cpp utils.cpp Log.cpp
+
+INSTALL_BINS=export import genfft gettile info
+
 ifneq ($(strip $(FFT_SUPPORT)),)
 CPPFLAGS += -DFFT_SUPPORT
 LDFLAGS += -lfftw3
+INSTALL_BINS += genfft
 endif
-
-# SOURCES=tilegen.cpp mysql_common.cpp MysqlQuery.cpp Channel.cpp Logrec.cpp Tile.cpp utils.cpp Log.cpp
-
-INSTALL_BINS=export import gettile info
 
 all: $(INSTALL_BINS)
 
@@ -76,6 +78,9 @@ copy: copy.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
 export: export.cpp $(SRCS) $(INCLUDES)
+	g++ $(CPPFLAGS) $@.cpp -o $@ $(SRCS) $(LDFLAGS)
+
+genfft: genfft.cpp $(SRCS) $(INCLUDES)
 	g++ $(CPPFLAGS) $@.cpp -o $@ $(SRCS) $(LDFLAGS)
 
 gettile: gettile.cpp $(SRCS) $(INCLUDES)

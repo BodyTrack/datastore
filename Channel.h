@@ -2,6 +2,7 @@
 #define CHANNEL_INCLUDE_H
 
 // C++
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -64,7 +65,7 @@ public:
   std::string dump_tile_summaries() const;
 
   bool read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, Tile &ret) const;
-  void read_bottommost_tiles_in_range(Range times, bool (*callback)(const Tile &t, Range times)) const;
+  void read_bottommost_tiles_in_range(Range times, std::function<bool (const Tile &t, Range times)> callback) const;
   void read_tiles_in_range(Range times, bool (*callback)(const Tile &t, Range times), int desired_level) const;
 
   std::string descriptor() const;

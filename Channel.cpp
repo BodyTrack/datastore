@@ -399,7 +399,7 @@ bool Channel::read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, 
 }
 
 void Channel::read_bottommost_tiles_in_range(Range times,
-                                             bool (*callback)(const Tile &t, Range times)) const {
+                                             std::function<bool (const Tile &t, Range times)> callback) const {
   ChannelInfo info;
   bool success = read_info(info);
   if (!success) return;
@@ -417,7 +417,7 @@ void Channel::read_bottommost_tiles_in_range(Range times,
 
     Tile t;
     assert(read_tile(ti, t));
-    if (!(*callback)(t, times)) break;
+    if (!callback(t, times)) break;
   }
 }
 

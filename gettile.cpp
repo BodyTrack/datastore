@@ -1,5 +1,6 @@
 // C++
 #include <iostream>
+#include <map>
 #include <set>
 #include <string>
 #include <vector>
@@ -17,16 +18,15 @@
 #include "FilesystemKVS.h"
 #include "ImportBT.h"
 #include "Log.h"
+#include "MapSerializer.h"
 #include "utils.h"
 
 void usage()
 {
   std::cerr << "Usage:\n";
   std::cerr << "gettile store.kvs UID devicenickname.channel level offset\n";
-#if FFT_SUPPORT
-  std::cerr << "  If the string '.DFT' is appended to the channel name, the discrete\n";
-  std::cerr << "  Fourier transform of the data is returned instead\n";
-#endif /* FFT_SUPPORT */
+  std::cerr << "  If the string '.DFT' is appended to the channel name, the discrete Fourier\n";
+  std::cerr << "  transform of the data is returned instead if it has been calculated\n";
   std::cerr << "Exiting...\n";
   exit(1);
 }
@@ -66,6 +66,25 @@ void read_tile_samples(KVS &store, int uid, std::string full_channel_name, TileI
   }
 }
 
+// Reconstitutes the 2D tile from a flattened tile
+void unflatten_tile(const Tile &tile,
+    const unsigned num_windows,
+    const unsigned window_size,
+    std::vector<std::vector<double> > &nums) {
+  if (tile.double_samples.size() != num_windows * window_size)
+    throw std::runtime_error("Unexpected number of samples");
+
+  // Now fill in the tile data
+  for (unsigned window_id = 0; window_id < num_windows; window_id++) {
+    std::vector<double> window;
+    for (unsigned item_idx = 0; item_idx < window_size; item_idx++)
+      window.push_back(
+          tile.double_samples[window_id * window_size + item_idx].value);
+
+    nums.push_back(window);
+  }
+}
+
 struct GraphSample {
   double time;
   bool has_value;
@@ -97,14 +116,6 @@ int main(int argc, char **argv)
   
   if (!*argptr) usage();
   std::string full_channel_name = *argptr++;
-#if FFT_SUPPORT
-  bool writing_fft = false;
-  size_t fftpos = full_channel_name.rfind(".DFT");
-  if (fftpos != std::string::npos) {
-    full_channel_name = full_channel_name.substr(0, fftpos);
-    writing_fft = true;
-  }
-#endif /* FFT_SUPPORT */
 
   if (!*argptr) usage();
   int tile_level = atoi(*argptr++);
@@ -138,21 +149,42 @@ int main(int argc, char **argv)
   // 5th ancestor
   TileIndex requested_index = client_tile_index.parent().parent().parent().parent().parent();
 
-  std::vector<DataSample<double> > double_samples;
-  std::vector<DataSample<std::string> > string_samples;
-  std::vector<DataSample<std::string> > comments;
+  std::string::size_type dft_loc = full_channel_name.rfind(".DFT");
+  std::string::size_type dot_loc = full_channel_name.find(".");
 
-  bool doubles_binned, strings_binned, comments_binned;
-  // TODO: If writing FFT, ***get more data***
-  // TODO: Use min_time_required and max_time_required, get max-res data
-  read_tile_samples(store, uid, full_channel_name, requested_index, client_tile_index, double_samples, doubles_binned);
-#if FFT_SUPPORT
-  if (writing_fft) {
-    std::vector<std::vector<double> > fft, shifted;
-    int num_values;
+  if (dft_loc != std::string::npos && dft_loc != dot_loc) {
+    // Using DFT data, since the string contains .DFT, and the channel
+    // name (the part after the first period in the string) is not DFT
 
-    windowed_fft(double_samples, requested_index, fft);
-    present_fft(fft, shifted, num_values);
+    // Read the tile from disk
+    int num_values = NUM_FFT_STEPS;
+    std::vector<std::vector<double> > dft;
+
+    Channel ch(store, uid, full_channel_name);
+    Tile data_tile;
+    TileIndex actual_index;
+    bool success = ch.read_tile_or_closest_ancestor(requested_index,
+        actual_index, data_tile);
+    if (!success) {
+      log_f("gettile: no tile found for %s",
+          requested_index.to_string().c_str());
+    } else {
+      // Pull out the keys and values of the map
+      if (data_tile.string_samples.size() != 1)
+        throw std::runtime_error(
+            "Should have exactly one string sample on a DFT tile");
+      log_f("Parsing '%s' as tile metadata",
+          data_tile.string_samples[0].value.c_str());
+      MapSerializer serializer;
+      std::map<std::string, std::string> m =
+          serializer.deserialize(data_tile.string_samples[0].value);
+
+      num_values = atoi(m["num_values"].c_str());
+      int num_windows = atoi(m["num_windows"].c_str());
+      int window_size = atoi(m["window_size"].c_str());
+
+      unflatten_tile(data_tile, num_windows, window_size, dft);
+    }
 
     // JSON tile to send back to the client includes some of the same
     // information as a non-DFT tile
@@ -163,17 +195,25 @@ int main(int argc, char **argv)
     tile["offset"] = Json::Value((double)tile_offset);
     tile["num_values"] = Json::Value(num_values);
     tile["dft"] = Json::Value(Json::arrayValue);
-    for (unsigned window_id = 0; window_id < shifted.size(); window_id++) {
+    for (unsigned window_id = 0; window_id < dft.size(); window_id++) {
       Json::Value window(Json::arrayValue);
-      for (unsigned i = 0; i < shifted[window_id].size(); i++)
-        window.append(shifted[window_id][i]);
+      for (unsigned i = 0; i < dft[window_id].size(); i++)
+        window.append((int)(dft[window_id][i]));
 
       tile["dft"].append(window);
     }
     std::cout << Json::FastWriter().write(tile) << std::endl;
     return 0;
   }
-#endif /* FFT_SUPPORT */
+
+  // Not DFT data
+  std::vector<DataSample<double> > double_samples;
+  std::vector<DataSample<std::string> > string_samples;
+  std::vector<DataSample<std::string> > comments;
+
+  bool doubles_binned, strings_binned, comments_binned;
+
+  read_tile_samples(store, uid, full_channel_name, requested_index, client_tile_index, double_samples, doubles_binned);
   read_tile_samples(store, uid, full_channel_name, requested_index, client_tile_index, string_samples, strings_binned);
   read_tile_samples(store, uid, full_channel_name+"._comment", requested_index, client_tile_index, comments, comments_binned);
   string_samples.insert(string_samples.end(), comments.begin(), comments.end());
