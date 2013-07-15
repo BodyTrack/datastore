@@ -67,6 +67,10 @@ struct TileIndex {
     return duration()*(offset+1);
   }
 
+  Range to_range() const {
+    return Range(start_time(), end_time());
+  }
+
   bool contains_time(double time) const {
     return start_time() <= time && time < end_time();
   }

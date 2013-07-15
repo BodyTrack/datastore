@@ -1,5 +1,6 @@
 // System
 #include <assert.h>
+#include <functional>
 #include <set>
 #include <stdexcept>
 #include <stdio.h>
@@ -422,8 +423,8 @@ void Channel::read_bottommost_tiles_in_range(Range times,
 }
 
 void Channel::read_tiles_in_range(Range times,
-                   	          bool (*callback)(const Tile &t, Range times),
-				  int desired_level) const {
+    std::function<bool (const Tile &t, Range times)> callback,
+    int desired_level) const {
   ChannelInfo info;
   bool success = read_info(info);
   if (!success) return;
@@ -441,7 +442,7 @@ void Channel::read_tiles_in_range(Range times,
 
     Tile t;
     assert(read_tile(ti, t));
-    if (!(*callback)(t, times)) break;
+    if (!(callback(t, times))) break;
   }
 }
 

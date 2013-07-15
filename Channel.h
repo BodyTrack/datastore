@@ -66,8 +66,9 @@ public:
 
   bool read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, Tile &ret) const;
   void read_bottommost_tiles_in_range(Range times, std::function<bool (const Tile &t, Range times)> callback) const;
-  void read_tiles_in_range(Range times, bool (*callback)(const Tile &t, Range times), int desired_level) const;
-
+  void read_tiles_in_range(Range times,
+      std::function<bool (const Tile &t, Range times)> callback,
+      int desired_level) const;
   std::string descriptor() const;
 
   /// Get subchannel names

@@ -1,6 +1,9 @@
 // C++
+#include <algorithm>
+#include <functional>
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <set>
 #include <string>
 #include <vector>
@@ -20,6 +23,8 @@
 #include "Log.h"
 #include "MapSerializer.h"
 #include "utils.h"
+
+typedef std::vector<std::vector<double> > double_mat;
 
 void usage()
 {
@@ -83,6 +88,126 @@ void unflatten_tile(const Tile &tile,
 
     nums.push_back(window);
   }
+}
+
+void parse_single_dft_tile(const Tile &tile,
+    int &num_values, double_mat &dft) {
+  if (tile.string_samples.size() != 1)
+    throw std::runtime_error(
+        "Should have exactly one string sample on a DFT tile");
+
+  // Pull out the keys and values of the map
+  log_f("Parsing '%s' as tile metadata",
+      tile.string_samples[0].value.c_str());
+  MapSerializer serializer;
+  std::map<std::string, std::string> m =
+      serializer.deserialize(tile.string_samples[0].value);
+
+  num_values = atoi(m["num_values"].c_str());
+  int num_windows = atoi(m["num_windows"].c_str());
+  int window_size = atoi(m["window_size"].c_str());
+
+  unflatten_tile(tile, num_windows, window_size, dft);
+}
+
+bool read_single_dft_tile(const Channel &ch,
+    const TileIndex &requested_index,
+    int &num_values,
+    double_mat &dft) {
+  Tile data_tile;
+  TileIndex actual_index;
+  bool success = ch.read_tile_or_closest_ancestor(requested_index,
+      actual_index, data_tile);
+  if (!success) {
+    log_f("gettile: no tile found for %s",
+        requested_index.to_string().c_str());
+    return false;
+  } else {
+    parse_single_dft_tile(data_tile, num_values, dft);
+    return true;
+  }
+}
+
+std::vector<double> divide_each(const std::vector<double> &v,
+    double divisor) {
+  std::vector<double> result;
+  for (unsigned idx = 0; idx < v.size(); idx++)
+    result.push_back(v[idx] / divisor);
+  return result;
+}
+
+void read_dft(const Channel &ch, const TileIndex &requested_index,
+    int &num_values, double_mat &dft) {
+  // We have the data we need
+  if (read_single_dft_tile(ch, requested_index, num_values, dft))
+    return;
+
+  // No tile at this level: need to combine tiles
+  std::vector<int> * num_values_results = new std::vector<int>;
+  std::vector<double_mat> * tiles = new std::vector<double_mat>;
+  ch.read_tiles_in_range(requested_index.to_range(),
+    [=] (const Tile &t, Range times) -> bool {
+      if (times.max > requested_index.start_time() &&
+          times.min < requested_index.end_time()) {
+        int nvals;
+        double_mat tile_data;
+        parse_single_dft_tile(t, nvals, tile_data);
+        num_values_results->push_back(nvals);
+        tiles->push_back(tile_data);
+      }
+      return true;
+    },
+    requested_index.level);
+
+  if (num_values_results->empty()) {
+    num_values = 0;
+    log_f("No tiles found at all in range %s",
+        requested_index.to_string().c_str());
+    return;
+  }
+
+  // The number of possible output values is the max of the number
+  // of input values
+  num_values = *std::max_element(num_values_results->begin(),
+      num_values_results->end());
+
+  // Average neighboring DFTs together to get a correctly-sized single
+  // tile, which has as many DFTs as the largest tile in the range
+  unsigned nbins = 0;
+  unsigned max_window_size = 0;
+  unsigned nrows = 0;
+  for (unsigned tile_idx = 0; tile_idx < tiles->size(); tile_idx++) {
+    double_mat t = (*tiles)[tile_idx];
+    nrows += t.size();
+    // All windows in a tile are the same size
+    max_window_size = std::max<unsigned>(max_window_size, t[0].size());
+    nbins = std::max<unsigned>(nbins, t.size());
+  }
+  unsigned binsize = std::max<unsigned>(1, nrows / nbins);
+
+  // Actually bin the data
+  std::vector<double> window(max_window_size, 0.0);
+  unsigned bin_idx = 0;
+  for (unsigned tile_idx = 0; tile_idx < tiles->size(); tile_idx++) {
+    double_mat t = (*tiles)[tile_idx];
+    for (unsigned window_id = 0; window_id < t.size(); window_id++) {
+      for (unsigned idx = 0; idx < t[window_id].size(); idx++) {
+        window[idx] += t[window_id][idx];
+      }
+      bin_idx++;
+      if (bin_idx >= binsize) {
+        dft.push_back(divide_each(window, bin_idx));
+        bin_idx = 0;
+      }
+    }
+  }
+
+  // We had a partial window
+  if (bin_idx > 0)
+    dft.push_back(divide_each(window, bin_idx));
+
+  delete num_values_results;
+  delete tiles;
 }
 
 struct GraphSample {
@@ -157,34 +282,11 @@ int main(int argc, char **argv)
     // name (the part after the first period in the string) is not DFT
 
     // Read the tile from disk
-    int num_values = NUM_FFT_STEPS;
+    int num_values;
     std::vector<std::vector<double> > dft;
 
     Channel ch(store, uid, full_channel_name);
-    Tile data_tile;
-    TileIndex actual_index;
-    bool success = ch.read_tile_or_closest_ancestor(requested_index,
-        actual_index, data_tile);
-    if (!success) {
-      log_f("gettile: no tile found for %s",
-          requested_index.to_string().c_str());
-    } else {
-      // Pull out the keys and values of the map
-      if (data_tile.string_samples.size() != 1)
-        throw std::runtime_error(
-            "Should have exactly one string sample on a DFT tile");
-      log_f("Parsing '%s' as tile metadata",
-          data_tile.string_samples[0].value.c_str());
-      MapSerializer serializer;
-      std::map<std::string, std::string> m =
-          serializer.deserialize(data_tile.string_samples[0].value);
-
-      num_values = atoi(m["num_values"].c_str());
-      int num_windows = atoi(m["num_windows"].c_str());
-      int window_size = atoi(m["window_size"].c_str());
-
-      unflatten_tile(data_tile, num_windows, window_size, dft);
-    }
+    read_dft(ch, requested_index, num_values, dft);
 
     // JSON tile to send back to the client includes some of the same
     // information as a non-DFT tile
