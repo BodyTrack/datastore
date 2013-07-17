@@ -1,3 +1,11 @@
+ifeq ($(shell uname -s),Linux)
+  LDFLAGS = -static
+  CXX = g++ -std=c++0x
+else
+  LDFLAGS =
+  CXX = clang++ -stdlib=libc++ -std=c++11
+endif
+
 CMPJSON = 2>>log.txt | ./compare_json --ignore-log -
 CMPTXT = 2>>log.txt | diff -b -
 
@@ -41,38 +49,38 @@ VPATH = ..
 	./$^
 
 compare_json: compare_json.cpp $(JSON_SRCS)
-	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CXX) $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
 TestRange: TestRange.cpp utils.cpp
-	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CXX) $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 	./$@
 
 TestJson: TestJson.cpp utils.cpp $(JSON_SRCS)
-	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CXX) $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 	./$@
 
 TestBinaryIO: TestBinaryIO.cpp BinaryIO.cpp utils.cpp
-	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CXX) $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 	./$@
 
 TestDataSample: TestDataSample.cpp utils.cpp
-	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CXX) $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 	./$@
 
 TestTileIndex: TestTileIndex.cpp utils.cpp $(JSON_SRCS)
-	g++ $(CPPFLAGS) -Wall -g -I .. -I /opt/local/include -o $@ $^ $(LDFLAGS)
+	$(CXX) $(CPPFLAGS) -Wall -g -I .. -I /opt/local/include -o $@ $^ $(LDFLAGS)
 	./$@
 
 TestTile: TestTile.cpp BinaryIO.cpp Log.cpp Tile.cpp utils.cpp $(JSON_SRCS)
-	g++ $(CPPFLAGS) -Wall -g -I .. -I /opt/local/include -o $@ $^ $(LDFLAGS)
+	$(CXX) $(CPPFLAGS) -Wall -g -I .. -I /opt/local/include -o $@ $^ $(LDFLAGS)
 	./$@
 
 TestChannel: TestChannel.cpp BinaryIO.cpp Channel.cpp FilesystemKVS.cpp KVS.cpp Log.cpp Tile.cpp utils.cpp $(JSON_SRCS)
-	g++ $(CPPFLAGS) -Wall -g -I .. -I /opt/local/include -o $@ $^ $(LDFLAGS)
+	$(CXX) $(CPPFLAGS) -Wall -g -I .. -I /opt/local/include -o $@ $^ $(LDFLAGS)
 	./$@
 
 TestFilesystemKVS: TestFilesystemKVS.cpp FilesystemKVS.cpp KVS.cpp utils.cpp Log.cpp $(JSON_SRCS)
-	g++ $(CPPFLAGS) -Wall -g -I .. -I /opt/local/include -o $@ $^ $(LDFLAGS)
+	$(CXX) $(CPPFLAGS) -Wall -g -I .. -I /opt/local/include -o $@ $^ $(LDFLAGS)
 	./$@
 
 test-annebug: compare_json
