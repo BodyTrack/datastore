@@ -173,21 +173,37 @@ void write_fft_tile(Channel &ch,
 
   Tile tile;
   int nitems = count_elems(*shifted);
+  assert (nitems > 0);
+  DataSample<double> * flattened_samples = (DataSample<double> *)
+      calloc(nitems, sizeof(DataSample<double>));
+  if (!flattened_samples)
+    throw std::runtime_error("Failed to allocate space for samples");
+  unsigned curr_item = 0;
   for (unsigned window_id = 0; window_id < shifted->size(); window_id++) {
     for (unsigned item_idx = 0; item_idx < (*shifted)[window_id].size(); item_idx++) {
       // Evenly space all the values through the tile as we flatten
       // the vector, making sure not to go beyond the end of the tile
-      double time = index.start_time() + (index.duration() - 1) / nitems;
-      DataSample<double> flattened_sample(time,
+      double time = index.start_time()
+          + index.duration() * curr_item / nitems;
+      flattened_samples[curr_item] = DataSample<double>(time,
           (*shifted)[window_id][item_idx],
           1.0, 1.0); // Weight and stdev don't matter
-      tile.double_samples.push_back(flattened_sample);
+      curr_item++;
     }
   }
-  tile.string_samples.push_back(
+  tile.insert_samples(&flattened_samples[0],
+      &flattened_samples[nitems]); // End is one past last valid sample
+  free(flattened_samples);
+
+  // Write the serialized tile index
+  DataSample<std::string> serialized_metadata_array[1];
+  serialized_metadata_array[0] =
       DataSample<std::string>(index.start_time(),
           tile_properties(num_values, *shifted),
-          1.0, 1.0));
+          1.0, 1.0);
+  tile.insert_samples(&serialized_metadata_array[0],
+      &serialized_metadata_array[1]); // End is one past last valid sample
+
   ch.write_tile(index, tile);
 
   delete fft;
