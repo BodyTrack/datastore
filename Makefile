@@ -24,7 +24,7 @@ endif
 
 # SOURCES=tilegen.cpp mysql_common.cpp MysqlQuery.cpp Channel.cpp Logrec.cpp Tile.cpp utils.cpp Log.cpp
 
-INSTALL_BINS=export import genfft gettile info
+INSTALL_BINS=export import gettile info
 
 ifneq ($(strip $(FFT_SUPPORT)),)
 CPPFLAGS += -DFFT_SUPPORT

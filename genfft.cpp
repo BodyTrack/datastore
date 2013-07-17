@@ -21,6 +21,8 @@
 #include "TileIndex.h"
 #include "utils.h"
 
+#ifdef FFT_SUPPORT
+
 // Declarations of values local to this app
 // The most detailed tile we represent has roughly 320 samples,
 // spaced at 10 Hz intervals
@@ -44,6 +46,8 @@ template<typename T>
 std::string to_string(const T &item);
 
 void usage(void);
+
+#endif /* FFT_SUPPORT */
 
 // Implementation
 
@@ -145,6 +149,8 @@ int main(int argc, char **argv) {
 #endif /* FFT_SUPPORT */
 }
 
+#ifdef FFT_SUPPORT
+
 void read_all_samples(Range times, Channel &ch,
     std::vector<DataSample<double> > * samples) {
   std::function<bool (const Tile &, Range)> add_to_samples(
@@ -241,4 +247,6 @@ void usage(void) {
   std::cerr << "Exiting..." << std::endl;
   exit(1);
 }
+
+#endif /* FFT_SUPPORT */
 
