@@ -95,9 +95,7 @@ private:
   std::string key_prefix() const;
   std::string metainfo_key() const;
 
-  TileIndex find_lowest_child_overlapping_time(TileIndex ti, double t) const;
   TileIndex find_child_overlapping_time(TileIndex ti, double t, int desired_level) const;
-  TileIndex find_lowest_successive_tile(TileIndex root, TileIndex ti) const;
   TileIndex find_successive_tile(TileIndex root, TileIndex ti, int desired_level) const;
   
   TileIndex split_tile_if_needed(TileIndex ti, Tile &tile);
