@@ -121,9 +121,13 @@ test-export-csv:
 test-import-json-format: compare_json
 	rm -rf foo.kvs
 	mkdir -p foo.kvs
-	../import foo.kvs 1 rphone --format json testdata/json_import20110805-4317-1pzfs94-0 $(CMPJSON) output/test-import-json-format-1
-	../export foo.kvs 1 rphone.latitude rphone.altitude rphone.speed                     $(CMPTXT) output/test-import-json-format-2
-	../export foo.kvs --csv 1 rphone.latitude rphone.altitude rphone.speed               $(CMPTXT) output/test-import-json-format-3
+	../import foo.kvs 1 rphone --format json testdata/json_import20110805-4317-1pzfs94-0                       $(CMPJSON) output/test-import-json-format-1
+	../export foo.kvs 1 rphone.latitude rphone.altitude rphone.speed                                           $(CMPTXT) output/test-import-json-format-2
+	../export foo.kvs --csv 1 rphone.latitude rphone.altitude rphone.speed                                     $(CMPTXT) output/test-import-json-format-3
+	../export foo.kvs --csv --start 1312585229 --end 1312585232 1 rphone.latitude rphone.altitude rphone.speed $(CMPTXT) output/test-import-json-format-3
+	../export foo.kvs --csv --start 1312585230 --end 1312585232 1 rphone.latitude rphone.altitude rphone.speed $(CMPTXT) output/test-import-json-format-4
+	../export foo.kvs --csv --start 1312585230 --end 1312585231 1 rphone.latitude rphone.altitude rphone.speed $(CMPTXT) output/test-import-json-format-5
+	../export foo.kvs --csv --start 1312585240 1 rphone.latitude rphone.altitude rphone.speed                  $(CMPTXT) output/test-import-json-format-6
 
 test-import-json-single-entry: compare_json
 	rm -rf foo.kvs

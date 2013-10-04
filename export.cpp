@@ -132,7 +132,6 @@ public:
   
   // Seek to first time >= new_time
   void seek(double new_time) {
-    Channel::Locker lock(*channel);
     TileIndex root = root_tile();
     if (root.is_null()) {
       ti = TileIndex::null();
@@ -174,7 +173,6 @@ public:
     if (double_sample() && double_sample()->time == t) double_index++;
     if (string_sample() && string_sample()->time == t) string_index++;
     if (!double_sample() && !string_sample()) {
-      Channel::Locker lock(*channel);
       // Advance to next tile
       TileIndex root = root_tile();
       if (root.is_null()) {
@@ -187,6 +185,7 @@ public:
 
 private:
   void read_tile(TileIndex tile_index) {
+    Channel::Locker lock(*channel);
     ti = tile_index;
     double_index = string_index = 0;
     if (!ti.is_null()) {
@@ -197,6 +196,7 @@ private:
   }
 
   TileIndex root_tile() {
+    Channel::Locker lock(*channel);
     ChannelInfo info;
     if (!channel->read_info(info)) return TileIndex::null();
     return info.nonnegative_root_tile_index;
@@ -299,7 +299,7 @@ int execute(Arglist args)
   log_f("export START: %s", invocation.c_str());
   
   FilesystemKVS store(storename.c_str());
-  store.set_verbosity(100);
+  //store.set_verbosity(100);
   
   switch (format) {
   case LEGACY_FORMAT:
