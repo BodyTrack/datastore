@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 // Local
+#include "Arglist.h"
 #include "Binrec.h"
 #include "Channel.h"
 #include "DataSample.h"
@@ -21,12 +22,17 @@
 #include "Log.h"
 #include "utils.h"
 
-void usage()
+void usage(const char *fmt, ...)
 {
+  va_list args;
+  va_start(args, fmt);
+  std::string msg = string_vprintf(fmt, args);
+  va_end(args);
+  std::cerr << msg << "\n";
   std::cerr << "Usage:\n";
   std::cerr << "import store.kvs uid device-nickname [--format format] file1.bt ... fileN.bt\n";
   std::cerr << "allows formats: bt json\n";
-  throw std::runtime_error("Bad arguments");
+  throw std::runtime_error("Bad arguments: " + msg);
 }
 
 void emit_json(Json::Value &json) {
@@ -35,53 +41,41 @@ void emit_json(Json::Value &json) {
   log_f("import: sending: %s", response.c_str());
 }
   
-int execute(int argc, char **argv) { 
+int execute(Arglist args) { 
   long long begin_time = millitime();
-  char **argptr = argv+1;
-
-  if (!*argptr) usage();
-  std::string storename = *argptr++;
-
-  if (!*argptr) usage();
-  int uid = atoi(*argptr++);
-  if (uid <= 0) usage();
-  set_log_prefix(string_printf("%d %d ", getpid(), uid));
-  
-  {
-    std::string arglist;
-    for (int i = 0; i < argc; i++) {
-      if (i) arglist += " ";
-      arglist += std::string("'")+argv[i]+"'";
-    }
-    log_f("import START: %s", arglist.c_str());
-  }
-
-  if (!*argptr) usage();
-  std::string dev_nickname = *argptr++;
+  std::string invocation = args.to_string();
 
   std::string format = "";
+  verbose = true;
+
+  std::string storename = "";
+  int uid = 0;
+  std::string dev_nickname = "";
   std::vector<std::string> files;
 
-  while (*argptr) {
-    if (!strcmp(*argptr, "--format")) {
-      argptr++;
-      if (!*argptr) usage();
-      format = *argptr++;
-    }
-    if (!strcmp(*argptr, "--verbose")) {
-      argptr++;
-      verbose=true;
-    }
-    else {
-      if (!filename_exists(*argptr)) {
-        log_f("import: file %s doesn't exist", *argptr);
-        usage();
-      }
-      files.push_back(*argptr++);
+  while (!args.empty()) {
+    std::string arg = args.shift();
+    if (arg == "--format") {
+      format = args.shift();
+    } else if (arg =="--verbose") {
+      verbose = true;
+    } else if (Arglist::is_flag(arg)) {
+      usage("Unrecognized flag '%s'", arg.c_str());
+    } else if (storename == "") {
+      storename = arg;
+    } else if (uid == 0) {
+      uid = Arglist::parse_int(arg);
+    } else if (dev_nickname == "") {
+      dev_nickname = arg;
+    } else {
+      files.push_back(arg);
     }
   }
 
-  if (!files.size()) usage();
+  if (storename == "") usage("No store specified");
+  if (uid <= 0) usage("UID must be positive integer");
+  if (dev_nickname == "") usage("No device-nickname specified");
+  if (!files.size()) usage("No files to import");
 
   FilesystemKVS store(storename.c_str());
 
@@ -219,7 +213,7 @@ int main(int argc, char **argv)
 {
   int exit_code = 1;
   try {
-    exit_code = execute(argc, argv);
+    exit_code = execute(Arglist(argv + 1, argv + argc));
   } catch (const std::exception &e) {
     log_f("import: caught exception '%s'", e.what());
     Json::Value json_response(Json::objectValue);

@@ -65,7 +65,7 @@ void FilesystemKVS::set(const std::string &key, const std::string &value) {
 ///
 /// See FilesystemKVS class description for the mapping between datastore and filesystem.
 bool FilesystemKVS::get(const std::string &key, std::string &value) const {
-  std::string path = value_key_to_path(key); 
+  std::string path = value_key_to_path(key);
   FILE *in = fopen(path.c_str(), "rb");
   if (!in) {
     if (m_verbose) log_f("FilesystemKVS::get(%s) found no file at %s, returning false", key.c_str(), path.c_str());

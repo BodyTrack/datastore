@@ -64,7 +64,6 @@ public:
   std::string dump_tile_summaries() const;
 
   bool read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, Tile &ret) const;
-  void read_bottommost_tiles_in_range(Range times, bool (*callback)(const Tile &t, Range times)) const;
   void read_tiles_in_range(Range times, bool (*callback)(const Tile &t, Range times), int desired_level) const;
 
   std::string descriptor() const;
@@ -85,6 +84,9 @@ public:
   static int total_tiles_written;
   static int verbosity;
 
+  TileIndex find_child_overlapping_time(TileIndex ti, double t, int desired_level) const;
+  TileIndex find_successive_tile(TileIndex root, TileIndex ti, int desired_level) const;
+
 private:
   KVS &m_kvs;
   int m_owner_id;
@@ -94,9 +96,6 @@ private:
 
   std::string key_prefix() const;
   std::string metainfo_key() const;
-
-  TileIndex find_child_overlapping_time(TileIndex ti, double t, int desired_level) const;
-  TileIndex find_successive_tile(TileIndex root, TileIndex ti, int desired_level) const;
   
   TileIndex split_tile_if_needed(TileIndex ti, Tile &tile);
   void create_parent_tile_from_children(TileIndex ti, Tile &parent, Tile children[]);

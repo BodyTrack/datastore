@@ -398,29 +398,6 @@ bool Channel::read_tile_or_closest_ancestor(TileIndex ti, TileIndex &ret_index, 
   return true;
 }
 
-void Channel::read_bottommost_tiles_in_range(Range times,
-                                             bool (*callback)(const Tile &t, Range times)) const {
-  ChannelInfo info;
-  bool success = read_info(info);
-  if (!success) return;
-  if (!info.times.intersects(times)) return;
-
-  double time = times.min;
-  TileIndex ti = TileIndex::null();
-  while (time < times.max) {
-    if (ti.is_null()) {
-      ti = find_child_overlapping_time(info.nonnegative_root_tile_index, times.min, TileIndex::lowest_level());
-    } else {
-      ti = find_successive_tile(info.nonnegative_root_tile_index, ti, TileIndex::lowest_level());
-    }
-    if (ti.is_null() || ti.start_time() >= times.max) break;
-
-    Tile t;
-    assert(read_tile(ti, t));
-    if (!(*callback)(t, times)) break;
-  }
-}
-
 void Channel::read_tiles_in_range(Range times,
                    	          bool (*callback)(const Tile &t, Range times),
 				  int desired_level) const {

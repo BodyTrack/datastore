@@ -1,5 +1,6 @@
 CMPJSON = 2>>log.txt | ./compare_json --ignore-log -
 CMPTXT = 2>>log.txt | diff -b -
+#CMPTXT = 2>>log.txt >
 
 JSON_DIR = ../jsoncpp-src-0.5.0-patched
 
@@ -27,6 +28,7 @@ ALL = \
 	test-import-bt \
 	test-import-json-single \
 	test-import-json-multiple \
+        test-export-csv \
 	test-import-json-format \
 	test-import-json-single-entry
 
@@ -110,18 +112,26 @@ test-import-json-multiple: compare_json
 	../import foo.kvs 1 rphone testdata/multiple.json                $(CMPJSON) output/test-import-json-multiple-1
 	../export foo.kvs 1 rphone.latitude rphone.altitude rphone.speed $(CMPTXT) output/test-import-json-multiple-2
 
+test-export-csv:
+	rm -rf foo.kvs
+	mkdir -p foo.kvs
+	../import foo.kvs 1 rphone testdata/multiple.json                      > output/test-export-csv-1
+	../export --csv foo.kvs 1 rphone.latitude rphone.altitude rphone.speed $(CMPTXT) output/test-export-csv-2
+
 test-import-json-format: compare_json
 	rm -rf foo.kvs
 	mkdir -p foo.kvs
 	../import foo.kvs 1 rphone --format json testdata/json_import20110805-4317-1pzfs94-0 $(CMPJSON) output/test-import-json-format-1
 	../export foo.kvs 1 rphone.latitude rphone.altitude rphone.speed                     $(CMPTXT) output/test-import-json-format-2
+	../export foo.kvs --csv 1 rphone.latitude rphone.altitude rphone.speed               $(CMPTXT) output/test-import-json-format-3
 
 test-import-json-single-entry: compare_json
 	rm -rf foo.kvs
 	mkdir -p foo.kvs
 	../import foo.kvs 1 myiphone testdata/mymee-anne-import-test-110901.json $(CMPJSON) output/test-import-json-single-entry-1
-	../export foo.kvs 1 myiphone Dopaboost                                   $(CMPTXT) output/test-import-json-single-entry-2
-	../export foo.kvs 1 myiphone Dopaboost._comment                          $(CMPTXT) output/test-import-json-single-entry-3
+	../export foo.kvs 1 myiphone.Dopaboost                                   $(CMPTXT) output/test-import-json-single-entry-2
+	../export foo.kvs 1 myiphone.Dopaboost._comment                          $(CMPTXT) output/test-import-json-single-entry-3
 	../import foo.kvs 1 myiphone testdata/mymee-anne-import-test-110901.json $(CMPJSON) output/test-import-json-single-entry-4
-	../export foo.kvs 1 myiphone Dopaboost                                   $(CMPTXT) output/test-import-json-single-entry-2
-	../export foo.kvs 1 myiphone Dopaboost._comment                          $(CMPTXT) output/test-import-json-single-entry-3
+	../export foo.kvs 1 myiphone.Dopaboost                                   $(CMPTXT) output/test-import-json-single-entry-2
+	../export foo.kvs 1 myiphone.Dopaboost._comment                          $(CMPTXT) output/test-import-json-single-entry-3
+	../export foo.kvs --csv 1 myiphone.Dopaboost myiphone.Dopaboost._comment $(CMPTXT) output/test-import-json-single-entry-5
