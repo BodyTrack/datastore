@@ -136,11 +136,10 @@ public:
     if (root.is_null()) {
       ti = TileIndex::null();
     } else {
-      read_tile(channel->find_child_overlapping_time(root, new_time, desired_level));
+      read_tile_or_successor(channel->find_child_overlapping_time(root, new_time, desired_level), root);
       while (time() < new_time) advance();
     }
   }
-  
   // Returns NULL if no double_sample at current time, or if no more samples available
   DataSample<double> *double_sample() {
     if (!ti.is_null() && double_index < tile.double_samples.size()) {
@@ -167,7 +166,9 @@ public:
   
   // Advance to next available timestamp
   void advance() {
-    if (ti.is_null()) return;
+    if (ti.is_null()) {
+      return;
+    }
     
     double t = time();
     if (double_sample() && double_sample()->time == t) double_index++;
@@ -178,20 +179,29 @@ public:
       if (root.is_null()) {
         ti = TileIndex::null();
       } else {
-        read_tile(channel->find_successive_tile(root, ti, desired_level));
+        read_tile_or_successor(channel->find_successive_tile(root, ti, desired_level), root);
       }
     }
   }
-
+  
 private:
-  void read_tile(TileIndex tile_index) {
-    Channel::Locker lock(*channel);
-    ti = tile_index;
-    double_index = string_index = 0;
-    if (!ti.is_null()) {
-      if (!channel->read_tile(ti, tile)) {
-        ti = TileIndex::null();
+  void read_tile_or_successor(TileIndex tile_index, TileIndex root) {
+    while (1) {
+      Channel::Locker lock(*channel);
+      ti = tile_index;
+      double_index = string_index = 0;
+      if (!ti.is_null()) {
+	if (!channel->read_tile(ti, tile)) {
+	  ti = TileIndex::null();
+	} else {
+	  if (!double_sample() && !string_sample()) {
+	    // Empty tile?  skip to next
+	    tile_index = channel->find_successive_tile(root, tile_index, desired_level);
+	    continue;
+	  }
+	}
       }
+      return;
     }
   }
 
