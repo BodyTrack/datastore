@@ -292,7 +292,10 @@ int main(int argc, char **argv)
       data.append(sample);
     }
     tile["data"] = data;
-    tile["sample_width"] = std::max(30.0, bin_width);
+    // only include the sample_width field if we actually binned
+    if (doubles_binned) {
+      tile["sample_width"] = bin_width;
+    }
     printf("%s\n", rtrim(Json::FastWriter().write(tile)).c_str());
   } else {
     log_f("gettile: no samples");
