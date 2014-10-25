@@ -117,8 +117,12 @@ void FilesystemKVS::get_subkeys(const std::string &key, std::vector<std::string>
       // If it's a directory, recurse, honoring symlinks
       bool is_directory = false;
       std::string fullpath = path+"/"+ent->d_name;
+	
       switch (ent->d_type) {
-      case DT_DIR: is_directory = true; break;
+      case DT_DIR: 
+	is_directory = true; 
+	break;
+      case DT_UNKNOWN:
       case DT_LNK: {
 	struct stat statbuf;
 	int ret = stat(fullpath.c_str(), &statbuf);
