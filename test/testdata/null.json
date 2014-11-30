@@ -1,0 +1,7 @@
+{
+  "channel_names": ["latitude", "longitude", "accuracy"],
+  "data": [
+    [1417011868, 33, -117, 5],
+    [1417011869, 33, -117, null]
+  ]
+}

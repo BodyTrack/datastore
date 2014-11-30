@@ -63,9 +63,12 @@ void insert_samples_helper(const DataSample<T> *begin, const DataSample<T> *end,
     if (begin == end) *out++ = *begin2++;
     else if (begin2 == end2 || begin->time < begin2->time) *out++ = *begin++;
     else if (begin2->time < begin->time) *out++ = *begin2++;
-    else {
+    else if (begin->is_deletion_value()) {
+      // Delete value
+      begin++;
+      begin2++;
+    } else {
       // Duplicate entry.  Overwrite
-      // TODO: do we always want to overwrite?
       *out++ = *begin++;
       begin2++;
     }
@@ -78,8 +81,11 @@ void insert_samples_helper(const DataSample<T> *begin, const DataSample<T> *end,
 void Tile::insert_samples(const DataSample<double> *begin, const DataSample<double> *end) {
   insert_samples_helper(begin, end, double_samples);
   for (const DataSample<double> *s = begin; s < end; s++) {
-    ranges.times.add(s->time);
-    ranges.double_samples.add(s->value);
+    // TODO(rsargent): if we're deleting a sample with NaN, we should recalc ranges
+    if (!isnan(s->value)) {
+      ranges.times.add(s->time);
+      ranges.double_samples.add(s->value);
+    }
   }
 }
 

@@ -71,11 +71,11 @@ bool dump_samples(const Tile &tile, Range requested_times)
     if (select_double) {
       DataSample<double> sample = tile.double_samples[double_index++];
       if (requested_times.includes(sample.time)) 
-	printf("%.*gf\t%*g\n", double_precision_digits, sample.time, double_precision_digits, sample.value);
+	printf("%.*g\t%*g\n", double_precision_digits, sample.time, double_precision_digits, sample.value);
     } else {
       DataSample<std::string> sample = tile.string_samples[string_index++];
       if (requested_times.includes(sample.time))
-	printf("%.*gf\t%s\n", double_precision_digits, sample.time, sample.value.c_str());
+	printf("%.*g\t%s\n", double_precision_digits, sample.time, sample.value.c_str());
     }
   }
   return true;

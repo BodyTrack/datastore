@@ -30,7 +30,10 @@ ALL = \
 	test-import-json-multiple \
         test-export-csv \
 	test-import-json-format \
-	test-import-json-single-entry
+	test-import-json-single-entry \
+        test-import-null \
+        test-import-false \
+        test-import-true
 
 all: $(ALL)
 
@@ -139,3 +142,23 @@ test-import-json-single-entry: compare_json
 	../export foo.kvs 1 myiphone.Dopaboost                                   $(CMPTXT) output/test-import-json-single-entry-2
 	../export foo.kvs 1 myiphone.Dopaboost._comment                          $(CMPTXT) output/test-import-json-single-entry-3
 	../export foo.kvs --csv 1 myiphone.Dopaboost myiphone.Dopaboost._comment $(CMPTXT) output/test-import-json-single-entry-5
+
+test-import-null: compare_json
+	rm -rf foo.kvs
+	mkdir -p foo.kvs
+	../import foo.kvs 1 testdevice testdata/null.json $(CMPJSON) output/test-import-null-1
+	../export foo.kvs 1 testdevice.latitude testdevice.longitude testdevice.accuracy $(CMPTXT) output/test-import-null-2
+
+test-import-false: compare_json
+	rm -rf foo.kvs
+	mkdir -p foo.kvs
+	../import foo.kvs 1 testdevice testdata/false1.json $(CMPJSON) output/test-import-false-1
+	../export foo.kvs 1 testdevice.latitude testdevice.longitude testdevice.accuracy $(CMPTXT) output/test-import-false-2
+	../import foo.kvs 1 testdevice testdata/false2.json $(CMPJSON) output/test-import-false-3
+	../export foo.kvs 1 testdevice.latitude testdevice.longitude testdevice.accuracy $(CMPTXT) output/test-import-false-4
+
+# Importing 'true' should give an error message
+test-import-true: compare_json
+	rm -rf foo.kvs
+	mkdir -p foo.kvs
+	(../import foo.kvs 1 testdevice testdata/true.json; exit 0) $(CMPJSON) output/test-import-true

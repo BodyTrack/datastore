@@ -78,9 +78,19 @@ void parse_json_single(Json::Value json,
 
     for (unsigned j = 1; j < row.size(); j++) {
       if (row[j].type() == Json::nullValue) {
-	// skip
+	// skip "null" sample
       } else if (row[j].type() == Json::stringValue) {
         vector_string_data[j-1]->push_back(DataSample<std::string>(timestamp, row[j].asString()));
+      } else if (row[j].type() == Json::booleanValue) {
+        if (!row[j].asBool()) {
+          // false means delete the sample.  Ingest this as NaN.
+          vector_numeric_data[j-1]->push_back(DataSample<double>(timestamp, std::numeric_limits<double>::quiet_NaN()));
+        } else {
+          std::string msg =
+            string_printf("In row %d, col %d: cannot ingest boolean 'true'", i, j);
+          throw ParseError(msg.c_str());
+          // skip "true" sample
+        }
       } else {
         vector_numeric_data[j-1]->push_back(DataSample<double>(timestamp, row[j].asDouble()));
       }

@@ -30,7 +30,18 @@ struct DataSample {
   static bool time_lessthan(const DataSample<V> &a, const DataSample<V> &b) {
     return a.time < b.time;
   }
+  bool is_deletion_value() const;
 };
+
+template <>
+inline bool DataSample<double>::is_deletion_value() const {
+  return isnan(value);
+}
+
+template <>
+inline bool DataSample<std::string>::is_deletion_value() const {
+  return false;
+}
 
 template <class V>
 struct DataAccumulator {
