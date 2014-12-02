@@ -61,8 +61,14 @@ void insert_samples_helper(const DataSample<T> *begin, const DataSample<T> *end,
   // Merge
   while (!(begin == end && begin2 == end2)) {
     if (begin == end) *out++ = *begin2++;
-    else if (begin2 == end2 || begin->time < begin2->time) *out++ = *begin++;
-    else if (begin2->time < begin->time) *out++ = *begin2++;
+    else if (begin2 == end2 || begin->time < begin2->time) {
+      // Next sample comes from new source.  Skip if deletion value
+      if (begin->is_deletion_value()) {
+        begin++;
+      } else {
+        *out++ = *begin++;
+      }
+    } else if (begin2->time < begin->time) *out++ = *begin2++;
     else if (begin->is_deletion_value()) {
       // Delete value
       begin++;

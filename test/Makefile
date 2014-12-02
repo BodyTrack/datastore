@@ -33,6 +33,7 @@ ALL = \
 	test-import-json-single-entry \
         test-import-null \
         test-import-false \
+        test-import-false-atop-empty \
         test-import-true
 
 all: $(ALL)
@@ -156,6 +157,12 @@ test-import-false: compare_json
 	../export foo.kvs 1 testdevice.latitude testdevice.longitude testdevice.accuracy $(CMPTXT) output/test-import-false-2
 	../import foo.kvs 1 testdevice testdata/false2.json $(CMPJSON) output/test-import-false-3
 	../export foo.kvs 1 testdevice.latitude testdevice.longitude testdevice.accuracy $(CMPTXT) output/test-import-false-4
+
+test-import-false-atop-empty: compare_json
+	rm -rf foo.kvs
+	mkdir -p foo.kvs
+	../import foo.kvs 1 testdevice testdata/false2.json $(CMPJSON) output/test-import-false-atop-empty-1
+	../export foo.kvs 1 testdevice.latitude testdevice.longitude testdevice.accuracy $(CMPTXT) output/test-import-false-atop-empty-2
 
 # Importing 'true' should give an error message
 test-import-true: compare_json
