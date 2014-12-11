@@ -25,6 +25,7 @@ BINARIES = \
 ALL = \
 	$(BINARIES) \
 	test-annebug \
+	test-multi-gettile \
 	test-import-bt \
 	test-import-json-single \
 	test-import-json-multiple \
@@ -88,6 +89,12 @@ test-annebug: compare_json
 	../gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125 $(CMPJSON) output/test-annebug-2
 	../import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/345.bt $(CMPJSON) output/test-annebug-3
 	../gettile anne.kvs 1 A_Cheststrap.Respiration 0 2563125  $(CMPJSON) output/test-annebug-4
+
+test-multi-gettile: compare_json
+	rm -rf anne.kvs
+	mkdir anne.kvs
+	../import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/4e386a43.bt $(CMPJSON) output/test-multi-gettile-1
+	../gettile anne.kvs 1 --multi A_Cheststrap.Respiration,A_Cheststrap.EKG 0 2563125 $(CMPJSON) output/test-multi-gettile-2
 
 test-import-bt: compare_json
 	rm -rf foo.kvs

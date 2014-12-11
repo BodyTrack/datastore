@@ -3,6 +3,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <sstream>
 
 // C
 #include <math.h>
@@ -23,6 +24,7 @@ void usage()
 {
   std::cerr << "Usage:\n";
   std::cerr << "gettile store.kvs UID devicenickname.channel level offset\n";
+  std::cerr << "gettile store.kvs UID --multi dev1.ch1,dev2.ch2,... level offset\n";
 #if FFT_SUPPORT
   std::cerr << "  If the string '.DFT' is appended to the channel name, the discrete\n";
   std::cerr << "  Fourier transform of the data is returned instead\n";
@@ -31,8 +33,11 @@ void usage()
   exit(1);
 }
 
+
 template <typename T>
-void read_tile_samples(KVS &store, int uid, std::string full_channel_name, TileIndex requested_index, TileIndex client_tile_index, std::vector<DataSample<T> > &samples, bool &binned)
+void read_tile_samples(KVS &store, int uid, std::string full_channel_name, TileIndex requested_index, 
+                       TileIndex client_tile_index, bool force_regular_binning,
+                       std::vector<DataSample<T> > &samples, bool &binned)
 {
   Channel ch(store, uid, full_channel_name);
   Tile tile;
@@ -49,7 +54,7 @@ void read_tile_samples(KVS &store, int uid, std::string full_channel_name, TileI
     }
   }
 
-  if (samples.size() <= 512) {
+  if (samples.size() <= 512 && !force_regular_binning) {
     binned = false;
   } else {
     // Bin
@@ -61,7 +66,14 @@ void read_tile_samples(KVS &store, int uid, std::string full_channel_name, TileI
     }
     samples.clear();
     for (unsigned i = 0; i < bins.size(); i++) {
-      if (bins[i].weight > 0) samples.push_back(bins[i].get_sample());
+      if (bins[i].weight > 0 || force_regular_binning) {
+        DataSample<T> sample = bins[i].get_sample();
+        if (force_regular_binning) {
+          sample.time = client_tile_index.start_time() + 
+            client_tile_index.duration() * (i + 0.5) / 512.0;
+        }
+        samples.push_back(sample);
+      }
     }
   }
 }
@@ -82,6 +94,19 @@ struct GraphSample {
 
 bool operator<(const GraphSample &a, const GraphSample &b) { return a.time < b.time; }
 
+void gettile(KVS &store, int uid, std::string &full_channel_name, TileIndex client_tile_index, int tile_level, int tile_offset);
+void multi_gettile(KVS &store, int uid, std::vector<std::string> &full_channel_names, TileIndex client_tile_index, int tile_level, int tile_offset);
+
+
+std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
+  std::stringstream ss(s);
+  std::string item;
+  while (std::getline(ss, item, delim)) {
+    elems.push_back(item);
+  }
+  return elems;
+}
+
 int main(int argc, char **argv)
 {
   long long begin_time = millitime();
@@ -97,15 +122,14 @@ int main(int argc, char **argv)
   
   if (!*argptr) usage();
   std::string full_channel_name = *argptr++;
-#if FFT_SUPPORT
-  bool writing_fft = false;
-  size_t fftpos = full_channel_name.rfind(".DFT");
-  if (fftpos != std::string::npos) {
-    full_channel_name = full_channel_name.substr(0, fftpos);
-    writing_fft = true;
-  }
-#endif /* FFT_SUPPORT */
 
+  std::vector<std::string> full_channel_names;
+
+  if (full_channel_name == "--multi") {
+    if (!*argptr) usage();
+    split(*argptr++, ',', full_channel_names);
+  }
+  
   if (!*argptr) usage();
   int tile_level = atoi(*argptr++);
 
@@ -132,9 +156,66 @@ int main(int argc, char **argv)
     log_f("gettile START: %s (time %.9f-%.9f)",
 	  arglist.c_str(), client_tile_index.start_time(), client_tile_index.end_time());
   }
-    
+
   FilesystemKVS store(storename.c_str());
 
+  if (full_channel_names.size()) {
+    multi_gettile(store, uid, full_channel_names, client_tile_index, tile_level, tile_offset);
+  } else {
+    gettile(store, uid, full_channel_name, client_tile_index, tile_level, tile_offset);
+  }
+  log_f("gettile: finished in %lld msec", millitime() - begin_time);
+  return 0;
+}
+
+void multi_gettile(KVS &store, int uid, std::vector<std::string> &full_channel_names, TileIndex client_tile_index, int tile_level, int tile_offset) {
+  // 5th ancestor
+  TileIndex requested_index = client_tile_index.parent().parent().parent().parent().parent();
+  
+  std::vector<std::vector<DataSample<double> >*> data;
+  Json::Value channel_list = Json::Value(Json::arrayValue);
+
+  const int TILE_BINS = 512;
+  
+  for (unsigned i = 0; i < full_channel_names.size(); i++) {
+    channel_list.append(Json::Value(full_channel_names[i]));
+    std::vector<DataSample<double> > *double_samples = new std::vector<DataSample<double> >();
+    
+    bool doubles_binned;
+    read_tile_samples(store, uid, full_channel_names[i], requested_index, client_tile_index, 
+                      true,
+                      *double_samples, doubles_binned);
+    
+    assert(double_samples->size() == TILE_BINS);
+    data.push_back(double_samples);
+  }
+
+  Json::Value json_data = Json::Value(Json::arrayValue);
+
+  for (unsigned i = 0; i < TILE_BINS; i++) {
+    Json::Value timeslice = Json::Value(Json::arrayValue);
+    double time = (*data[0])[i].time;
+    timeslice.append(Json::Value(time));
+    
+    for (unsigned j = 0; j < full_channel_names.size(); j++) {
+      DataSample<double> &sample = (*data[j])[i];
+      assert(sample.time == time);
+      if (sample.weight > 0) {
+        timeslice.append(Json::Value(sample.value));
+      } else {
+        timeslice.append(Json::Value()); // NULL means no data
+      }
+    }
+    json_data.append(timeslice);
+  }
+      
+  Json::Value ret(Json::objectValue);
+  ret["full_channel_names"] = channel_list;
+  ret["data"] = json_data;
+  printf("%s\n", rtrim(Json::FastWriter().write(ret)).c_str());
+}
+
+void gettile(KVS &store, int uid, std::string &full_channel_name, TileIndex client_tile_index, int tile_level, int tile_offset) {
   // 5th ancestor
   TileIndex requested_index = client_tile_index.parent().parent().parent().parent().parent();
 
@@ -145,37 +226,15 @@ int main(int argc, char **argv)
   bool doubles_binned, strings_binned, comments_binned;
   // TODO: If writing FFT, ***get more data***
   // TODO: Use min_time_required and max_time_required, get max-res data
-  read_tile_samples(store, uid, full_channel_name, requested_index, client_tile_index, double_samples, doubles_binned);
-#if FFT_SUPPORT
-  if (writing_fft) {
-    std::vector<std::vector<double> > fft, shifted;
-    int num_values;
-
-    windowed_fft(double_samples, requested_index, fft);
-    present_fft(fft, shifted, num_values);
-
-    // JSON tile to send back to the client includes some of the same
-    // information as a non-DFT tile
-    Json::Value tile(Json::objectValue);
-    tile["level"] = Json::Value(tile_level);
-    // See discussion below for reason to cast tile_offset
-    // from long long to double
-    tile["offset"] = Json::Value((double)tile_offset);
-    tile["num_values"] = Json::Value(num_values);
-    tile["dft"] = Json::Value(Json::arrayValue);
-    for (unsigned window_id = 0; window_id < shifted.size(); window_id++) {
-      Json::Value window(Json::arrayValue);
-      for (unsigned i = 0; i < shifted[window_id].size(); i++)
-        window.append(shifted[window_id][i]);
-
-      tile["dft"].append(window);
-    }
-    std::cout << Json::FastWriter().write(tile) << std::endl;
-    return 0;
-  }
-#endif /* FFT_SUPPORT */
-  read_tile_samples(store, uid, full_channel_name, requested_index, client_tile_index, string_samples, strings_binned);
-  read_tile_samples(store, uid, full_channel_name+"._comment", requested_index, client_tile_index, comments, comments_binned);
+  read_tile_samples(store, uid, full_channel_name, requested_index, client_tile_index, 
+                    false,
+                    double_samples, doubles_binned);
+  read_tile_samples(store, uid, full_channel_name, requested_index, client_tile_index, 
+                    false,
+                    string_samples, strings_binned);
+  read_tile_samples(store, uid, full_channel_name+"._comment", requested_index, client_tile_index, 
+                    false,
+                    comments, comments_binned);
   string_samples.insert(string_samples.end(), comments.begin(), comments.end());
   std::sort(string_samples.begin(), string_samples.end(), DataSample<std::string>::time_lessthan);
   
@@ -278,7 +337,6 @@ int main(int argc, char **argv)
 	}
 	data.append(sample);
       }
-
     }
     if (client_tile_index.end_time() - previous_sample_time > line_break_threshold ||
 	!previous_had_value) {
@@ -301,7 +359,4 @@ int main(int argc, char **argv)
     log_f("gettile: no samples");
     printf("{}");
   }
-  log_f("gettile: finished in %lld msec", millitime() - begin_time);
-
-  return 0;
 }
