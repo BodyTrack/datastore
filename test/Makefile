@@ -31,6 +31,7 @@ ALL = \
 	test-import-json-single \
 	test-import-json-multiple \
         test-export-csv \
+        test-export-csv-multiple-uid \
 	test-import-json-format \
 	test-import-json-single-entry \
         test-import-null \
@@ -134,8 +135,15 @@ test-import-json-multiple: compare_json
 test-export-csv:
 	rm -rf foo.kvs
 	mkdir -p foo.kvs
-	../import foo.kvs 1 rphone testdata/multiple.json                      > output/test-export-csv-1
+	../import foo.kvs 1 rphone testdata/multiple.json                      $(CMPJSON) output/test-export-csv-1
 	../export --csv foo.kvs 1 rphone.latitude rphone.altitude rphone.speed $(CMPTXT) output/test-export-csv-2
+
+test-export-csv-multiple-uid:
+	rm -rf foo.kvs
+	mkdir -p foo.kvs
+	../import foo.kvs 1 rphone testdata/multiple.json                           $(CMPJSON) output/test-export-csv-multiple-uid-1
+	../import foo.kvs 2 rphone2 testdata/multiple.json                          $(CMPJSON) output/test-export-csv-multiple-uid-2
+	../export --csv foo.kvs 1.rphone.latitude 1.rphone.speed 2.rphone2.altitude $(CMPTXT) output/test-export-csv-multiple-uid-3
 
 test-import-json-format: compare_json
 	rm -rf foo.kvs

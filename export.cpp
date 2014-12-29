@@ -33,6 +33,7 @@ void usage(const char *fmt, ...)
   
   std::cerr << "Usage:\n";
   std::cerr << "export [flags] store.kvs uid dev_nickname.ch_name [dev_nickname.ch_name ...]\n";
+  std::cerr << "export [flags] store.kvs uid.dev_nickname.ch_name [uid.dev_nickname.ch_name ...]\n";
   std::cerr << "   --start:  start time (floating-point epoch time).  Defaults to beginning of time.\n";
   std::cerr << "   --end:    end time (floating-point epoch time).  Defaults to end of time.\n";
   std::cerr << "   --csv:    export in CSV format\n";
@@ -217,11 +218,14 @@ void export_csv(KVS &store, Range timerange, int uid, const std::vector<std::str
   std::vector<simple_shared_ptr<ChannelReader> > readers;
 
   for (unsigned i = 0; i < channel_full_names.size(); i++) {
+    simple_shared_ptr<Channel> ch;
+    if (uid == -1) {
+      ch.reset(new Channel(store, channel_full_names[i]));
+    } else {
+      ch.reset(new Channel(store, uid, channel_full_names[i]));
+    }
     readers.push_back(simple_shared_ptr<ChannelReader>
-                      (new ChannelReader(channel_full_names[i],
-                                         simple_shared_ptr<Channel>
-                                         (new Channel(store, uid, channel_full_names[i])),
-                                         timerange.min)));
+                      (new ChannelReader(channel_full_names[i], ch, timerange.min)));
   }
   
   // Emit header
@@ -276,7 +280,7 @@ int execute(Arglist args)
   Range timerange = Range::all();
   
   std::string storename;
-  int uid = 0;
+  int uid = -1;
   std::vector<std::string> channel_full_names;
 
   while (!args.empty()) {
@@ -293,15 +297,19 @@ int execute(Arglist args)
       usage("Unknown flag '%s'", arg.c_str());
     } else if (storename == "") {
       storename = arg;
-    } else if (uid == 0) {
-      uid = Arglist::parse_int(arg);
+    } else if (uid == -1 && !channel_full_names.size()) {
+      // This might be UID or a fully-specified channel name of the form UID.dev.ch
+      if (strchr(arg.c_str(), '.')) {
+        channel_full_names.push_back(arg);
+      } else {
+        uid = Arglist::parse_int(arg);
+      }
     } else {
       channel_full_names.push_back(arg);
     }
   }
 
   if (storename == "") usage("Missing store");
-  if (uid <= 0) usage("UID must be a positive integer");
   if (channel_full_names.size() == 0) usage("No channels specified");
   
   set_log_prefix(string_printf("%d %d ", getpid(), uid));
