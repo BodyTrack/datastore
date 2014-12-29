@@ -26,6 +26,18 @@ Channel::Channel(KVS &kvs, int owner_id, const std::string &name, size_t max_til
   if (!sizes_are_valid()) throw std::runtime_error("Wrongly-sized type");
 }
 
+/// Create channel reference to KVS
+/// \param name      Full name of UID plus channel (e.g. UID.device_nickname.channel_name)
+Channel::Channel(KVS &kvs, const std::string &uid_and_name, size_t max_tile_size)
+  : m_kvs(kvs), m_max_tile_size(max_tile_size) {
+  char *first_dot = strchr(uid_and_name.c_str(), '.');
+  if (!first_dot) throw std::runtime_error("UID.device.channel is missing '.'");
+  std::string uid = std::string(uid_and_name.c_str(), first_dot - uid_and_name.c_str());
+  m_owner_id = atoi(uid.c_str());
+  m_name = first_dot + 1;
+  if (!sizes_are_valid()) throw std::runtime_error("Wrongly-sized type");
+}
+
 /// Lock channel upon construction; if currently locked, construction will block until lock is available
 /// \param ch        Channel to lock
 Channel::Locker::Locker(const Channel &ch) : m_ch(ch), m_locker(ch.m_kvs, ch.metainfo_key()) {

@@ -25,6 +25,8 @@
 class Channel {
 public:
   Channel(KVS &kvs, int owner_id, const std::string &name, size_t max_tile_size=BT_CHANNEL_MAX_TILE_SIZE);
+  Channel(KVS &kvs, const std::string &uid_and_name, size_t max_tile_size=BT_CHANNEL_MAX_TILE_SIZE);
+
   /// \class Locker Channel.h
   ///
   /// Lock channel upon construction and unlock channel upon destruction.

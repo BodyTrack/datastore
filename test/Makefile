@@ -96,6 +96,13 @@ test-multi-gettile: compare_json
 	../import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/4e386a43.bt $(CMPJSON) output/test-multi-gettile-1
 	../gettile anne.kvs 1 --multi A_Cheststrap.Respiration,A_Cheststrap.EKG 0 2563125 $(CMPJSON) output/test-multi-gettile-2
 
+test-multi-gettile-multi-uid: compare_json
+	rm -rf anne.kvs
+	mkdir anne.kvs
+	../import anne.kvs 1 A_Cheststrap testdata/anne-cheststrap-bug/4e386a43.bt $(CMPJSON) output/test-multi-gettile-multi-uid-1
+	../import anne.kvs 2 A_Cheststrap2 testdata/anne-cheststrap-bug/4e386a43.bt $(CMPJSON) output/test-multi-gettile-multi-uid-2
+	../gettile anne.kvs --multi 1.A_Cheststrap.Respiration,1.A_Cheststrap.EKG,2.A_Cheststrap2.Respiration 0 2563125 $(CMPJSON) output/test-multi-gettile-multi-uid-3
+
 test-import-bt: compare_json
 	rm -rf foo.kvs
 	mkdir -p foo.kvs

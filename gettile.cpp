@@ -25,6 +25,7 @@ void usage()
   std::cerr << "Usage:\n";
   std::cerr << "gettile store.kvs UID devicenickname.channel level offset\n";
   std::cerr << "gettile store.kvs UID --multi dev1.ch1,dev2.ch2,... level offset\n";
+  std::cerr << "gettile store.kvs --multi UID1.dev1.ch1,UID2.dev2.ch2,... level offset\n";
 #if FFT_SUPPORT
   std::cerr << "  If the string '.DFT' is appended to the channel name, the discrete\n";
   std::cerr << "  Fourier transform of the data is returned instead\n";
@@ -39,11 +40,16 @@ void read_tile_samples(KVS &store, int uid, std::string full_channel_name, TileI
                        TileIndex client_tile_index, bool force_regular_binning,
                        std::vector<DataSample<T> > &samples, bool &binned)
 {
-  Channel ch(store, uid, full_channel_name);
+  simple_shared_ptr<Channel> ch;
+  if (uid == -1) {
+    ch.reset(new Channel(store, full_channel_name));
+  } else {
+    ch.reset(new Channel(store, uid, full_channel_name));
+  }
   Tile tile;
   TileIndex actual_index;
-  bool success = ch.read_tile_or_closest_ancestor(requested_index, actual_index, tile);
-
+  bool success = ch->read_tile_or_closest_ancestor(requested_index, actual_index, tile);
+  
   if (!success) {
     log_f("gettile: no tile found for %s", requested_index.to_string().c_str());
   } else {
@@ -53,7 +59,7 @@ void read_tile_samples(KVS &store, int uid, std::string full_channel_name, TileI
       if (client_tile_index.contains_time(sample.time)) samples.push_back(sample);
     }
   }
-
+  
   if (samples.size() <= 512 && !force_regular_binning) {
     binned = false;
   } else {
@@ -116,16 +122,30 @@ int main(int argc, char **argv)
   std::string storename = *argptr++;
   
   if (!*argptr) usage();
-  int uid = atoi(*argptr++);
+  int uid = -1;
+  bool multi = false;
+  std::string maybe_uid = *argptr++;
+  if (maybe_uid != "--multi") {
+    uid = atoi(maybe_uid.c_str());
+  } else {
+    multi = true;
+  }
 
   set_log_prefix(string_printf("%d %d ", getpid(), uid));
   
   if (!*argptr) usage();
-  std::string full_channel_name = *argptr++;
+  
+  std::string full_channel_name;
+  if (!multi) {
+    full_channel_name = *argptr++;
+    if (full_channel_name == "--multi") {
+      multi = true;
+    }
+  }
 
   std::vector<std::string> full_channel_names;
 
-  if (full_channel_name == "--multi") {
+  if (multi) {
     if (!*argptr) usage();
     split(*argptr++, ',', full_channel_names);
   }
