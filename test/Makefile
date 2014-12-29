@@ -26,6 +26,7 @@ ALL = \
 	$(BINARIES) \
 	test-annebug \
 	test-multi-gettile \
+	test-multi-gettile-multi-uid \
 	test-import-bt \
 	test-import-json-single \
 	test-import-json-multiple \
