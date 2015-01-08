@@ -30,7 +30,7 @@ Channel::Channel(KVS &kvs, int owner_id, const std::string &name, size_t max_til
 /// \param name      Full name of UID plus channel (e.g. UID.device_nickname.channel_name)
 Channel::Channel(KVS &kvs, const std::string &uid_and_name, size_t max_tile_size)
   : m_kvs(kvs), m_max_tile_size(max_tile_size) {
-  char *first_dot = strchr(uid_and_name.c_str(), '.');
+  const char *first_dot = strchr(uid_and_name.c_str(), '.');
   if (!first_dot) throw std::runtime_error("UID.device.channel is missing '.'");
   std::string uid = std::string(uid_and_name.c_str(), first_dot - uid_and_name.c_str());
   m_owner_id = atoi(uid.c_str());
