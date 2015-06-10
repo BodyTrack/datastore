@@ -32,6 +32,8 @@ ALL = \
 	test-import-json-multiple \
         test-export-csv \
         test-export-csv-multiple-uid \
+        test-export-json \
+        test-export-json-multiple-uid \
 	test-import-json-format \
 	test-import-json-single-entry \
         test-import-null \
@@ -144,6 +146,24 @@ test-export-csv-multiple-uid:
 	../import foo.kvs 1 rphone testdata/multiple.json                           $(CMPJSON) output/test-export-csv-multiple-uid-1
 	../import foo.kvs 2 rphone2 testdata/multiple.json                          $(CMPJSON) output/test-export-csv-multiple-uid-2
 	../export --csv foo.kvs 1.rphone.latitude 1.rphone.speed 2.rphone2.altitude $(CMPTXT) output/test-export-csv-multiple-uid-3
+
+test-export-json:
+	rm -rf foo.kvs
+	mkdir -p foo.kvs
+	../import foo.kvs 1 rphone testdata/multiple.json                       $(CMPJSON) output/test-export-json-1
+	../export --json foo.kvs 1 rphone.latitude rphone.altitude rphone.speed $(CMPJSON) output/test-export-json-2
+	../export --json foo.kvs 1 foo.bar baz.bat $(CMPJSON) output/test-export-json-3
+	../export --json foo.kvs 1 rphone.latitude rphone.altitude rphone.speed --start 1312774911 $(CMPJSON) output/test-export-json-4
+	../export --json foo.kvs 1 rphone.latitude rphone.altitude rphone.speed --start 1312774908 --end 1312774911 $(CMPJSON) output/test-export-json-5
+	../export --json foo.kvs 1 rphone.latitude rphone.altitude rphone.speed rphone.bogus --start 1312774908 --end 1312774911 $(CMPJSON) output/test-export-json-6
+
+test-export-json-multiple-uid:
+	rm -rf foo.kvs
+	mkdir -p foo.kvs
+	../import foo.kvs 1 rphone testdata/multiple.json                           $(CMPJSON) output/test-export-json-multiple-uid-1
+	../import foo.kvs 2 rphone2 testdata/multiple.json                          $(CMPJSON) output/test-export-json-multiple-uid-2
+	../export --json foo.kvs 1.rphone.latitude 1.rphone.speed 2.rphone2.altitude $(CMPJSON) output/test-export-json-multiple-uid-3
+	../export --json foo.kvs 1.rphone.latitude 1.rphone.speed 2.rphone2.altitude 2.rphone2.bogus $(CMPJSON) output/test-export-json-multiple-uid-4
 
 test-import-json-format: compare_json
 	rm -rf foo.kvs
