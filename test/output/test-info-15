@@ -1,0 +1,18 @@
+{
+  "channel_specs": {
+    "speck.particle_concentration": {
+      "channel_bounds": {
+        "max_time": 1432857705,
+        "max_value": 30.7,
+        "min_time": 1429799614,
+        "min_value": 3.7
+      },
+      "most_recent_data_sample": {
+        "time": 1432857705,
+        "value": 19.5
+      }
+    }
+  },
+  "max_time": 1432857705,
+  "min_time": 1429799614
+}

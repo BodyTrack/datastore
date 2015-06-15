@@ -1,0 +1,18 @@
+{
+  "channel_specs": {
+    "humidity": {
+      "channel_bounds": {
+        "max_time": 1434399971,
+        "min_time": 1434399971
+      },
+      "imported_bounds": {
+        "max_time": 1434399971,
+        "min_time": 1434399971
+      }
+    }
+  },
+  "failed_records": 0,
+  "max_time": 1434399971,
+  "min_time": 1434399971,
+  "successful_records": 1
+}

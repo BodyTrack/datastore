@@ -30,16 +30,17 @@ ALL = \
 	test-import-bt \
 	test-import-json-single \
 	test-import-json-multiple \
-        test-export-csv \
-        test-export-csv-multiple-uid \
-        test-export-json \
-        test-export-json-multiple-uid \
+    test-export-csv \
+    test-export-csv-multiple-uid \
+    test-export-json \
+    test-export-json-multiple-uid \
+    test-info \
 	test-import-json-format \
 	test-import-json-single-entry \
-        test-import-null \
-        test-import-false \
-        test-import-false-atop-empty \
-        test-import-true
+    test-import-null \
+    test-import-false \
+    test-import-false-atop-empty \
+    test-import-true
 
 all: $(ALL)
 
@@ -164,6 +165,26 @@ test-export-json-multiple-uid:
 	../import foo.kvs 2 rphone2 testdata/multiple.json                          $(CMPJSON) output/test-export-json-multiple-uid-2
 	../export --json foo.kvs 1.rphone.latitude 1.rphone.speed 2.rphone2.altitude $(CMPJSON) output/test-export-json-multiple-uid-3
 	../export --json foo.kvs 1.rphone.latitude 1.rphone.speed 2.rphone2.altitude 2.rphone2.bogus $(CMPJSON) output/test-export-json-multiple-uid-4
+
+test-info:
+	rm -rf foo.kvs
+	mkdir -p foo.kvs
+	../import foo.kvs 1 speck testdata/info1.json $(CMPJSON) output/test-info-1
+	../info foo.kvs -r 1 --prefix speck           $(CMPJSON) output/test-info-2
+	../import foo.kvs 1 speck testdata/info2.json $(CMPJSON) output/test-info-3
+	../info foo.kvs -r 1 --prefix speck           $(CMPJSON) output/test-info-4
+	../import foo.kvs 1 speck testdata/info3.json $(CMPJSON) output/test-info-5
+	../info foo.kvs -r 1 --prefix speck           $(CMPJSON) output/test-info-6
+	../import foo.kvs 1 speck testdata/info4.json $(CMPJSON) output/test-info-7
+	../info foo.kvs -r 1 --prefix speck           $(CMPJSON) output/test-info-8
+	../import foo.kvs 1 speck testdata/info5.json $(CMPJSON) output/test-info-9
+	../info foo.kvs -r 1 --prefix speck           $(CMPJSON) output/test-info-10
+	../import foo.kvs 1 speck testdata/info6.json $(CMPJSON) output/test-info-11
+	../info foo.kvs -r 1 --prefix speck           $(CMPJSON) output/test-info-12
+	../import foo.kvs 1 speck testdata/info7.json $(CMPJSON) output/test-info-13
+	../info foo.kvs -r 1 --prefix speck           $(CMPJSON) output/test-info-14
+	../info foo.kvs -r 1 --prefix speck.particle_concentration $(CMPJSON) output/test-info-15
+	../info foo.kvs -r 1 --prefix speck.humidity $(CMPJSON) output/test-info-16
 
 test-import-json-format: compare_json
 	rm -rf foo.kvs

@@ -1,0 +1,54 @@
+{
+  "channel_specs": {
+    "speck.particle_concentration": {
+      "channel_bounds": {
+        "max_time": 1429801649,
+        "max_value": 30.6,
+        "min_time": 1429799614,
+        "min_value": 3.7
+      },
+      "most_recent_data_sample": {
+        "time": 1429801649,
+        "value": 30.6
+      }
+    },
+    "speck.particle_count": {
+      "channel_bounds": {
+        "max_time": 1429801649,
+        "max_value": 751,
+        "min_time": 1429799614,
+        "min_value": 92
+      },
+      "most_recent_data_sample": {
+        "time": 1429801649,
+        "value": 751
+      }
+    },
+    "speck.raw_particles": {
+      "channel_bounds": {
+        "max_time": 1429801649,
+        "max_value": 311,
+        "min_time": 1429799614,
+        "min_value": 65
+      },
+      "most_recent_data_sample": {
+        "time": 1429801649,
+        "value": 311
+      }
+    },
+    "speck.temperature": {
+      "channel_bounds": {
+        "max_time": 1429801649,
+        "max_value": 14.8,
+        "min_time": 1429799614,
+        "min_value": 0.1
+      },
+      "most_recent_data_sample": {
+        "time": 1429801649,
+        "value": 14.8
+      }
+    }
+  },
+  "max_time": 1429801649,
+  "min_time": 1429799614
+}

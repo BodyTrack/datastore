@@ -1,0 +1,64 @@
+{
+  "channel_specs": {
+    "particle_concentration": {
+      "channel_bounds": {
+        "max_time": 1431465023,
+        "max_value": 30.7,
+        "min_time": 1429799614,
+        "min_value": 3.7
+      },
+      "imported_bounds": {
+        "max_time": 1431465023,
+        "max_value": 30.7,
+        "min_time": 1431464123,
+        "min_value": 23.8
+      }
+    },
+    "particle_count": {
+      "channel_bounds": {
+        "max_time": 1431465023,
+        "max_value": 753,
+        "min_time": 1429799614,
+        "min_value": 92
+      },
+      "imported_bounds": {
+        "max_time": 1431465023,
+        "max_value": 753,
+        "min_time": 1431464123,
+        "min_value": 585
+      }
+    },
+    "raw_particles": {
+      "channel_bounds": {
+        "max_time": 1431465023,
+        "max_value": 349,
+        "min_time": 1429799614,
+        "min_value": 65
+      },
+      "imported_bounds": {
+        "max_time": 1431465023,
+        "max_value": 349,
+        "min_time": 1431464123,
+        "min_value": 177
+      }
+    },
+    "temperature": {
+      "channel_bounds": {
+        "max_time": 1431465023,
+        "max_value": 30.1,
+        "min_time": 1429799614,
+        "min_value": 0.1
+      },
+      "imported_bounds": {
+        "max_time": 1431465023,
+        "max_value": 30.1,
+        "min_time": 1431464123,
+        "min_value": 29
+      }
+    }
+  },
+  "failed_records": 0,
+  "max_time": 1431465023,
+  "min_time": 1431464123,
+  "successful_records": 1
+}

@@ -18,6 +18,7 @@
 #include "ImportBT.h"
 #include "Log.h"
 #include "utils.h"
+#include "jsoncpp-src-0.5.0-patched/include/json/value.h"
 
 void usage()
 {
@@ -121,11 +122,25 @@ bool get_channel_info_callback(const Tile &tile, Range requested_times)
   return true;
 }
 
-void get_channel_info(KVS &store, int uid, const std::string &channel_name, 
-		      Range times, Range &found_times, Range &found_values)
-{
+/**
+ * Gets the info for the given channel.  If the times Range is Range::all(), will also attempt to find and return the
+ * most recent data sample in most_recent_data_sample.  The value field of most_recent_data_sample will be NAN if no
+ * attempt was made to find the most recent data sample (e.g. the times Range is something other than Range::all()), or
+ * if it could not be found.
+ */
+void get_channel_info(KVS &store,
+                      int uid,
+                      const std::string &channel_name,
+                      Range times,
+                      Range &found_times,
+                      Range &found_values,
+                      DataSample<double> &most_recent_data_sample) {
+
   Channel ch(store, uid, channel_name);
   Channel::Locker locker(ch);
+
+  most_recent_data_sample.value = NAN;
+
   if (times == Range::all()) {
     ChannelInfo info;
     if (!ch.read_info(info)) {
@@ -139,6 +154,25 @@ void get_channel_info(KVS &store, int uid, const std::string &channel_name,
     }
     found_times = root.ranges.times;
     found_values = root.ranges.double_samples;
+
+    // Try to find the value at the max time. Do so by using find_child_overlapping_time() to drill down through the
+    // tile tree to find the appropriate tile.  Then try to read read the tile and, if successful, then pick out the
+    // last double value found, if any (e.g. it might be a tile of all comments)
+    if (!found_times.empty() && !found_values.empty()) {
+      TileIndex ti = ch.find_child_overlapping_time(info.nonnegative_root_tile_index,
+                                                    found_times.max,
+                                                    TileIndex::lowest_level());
+      Tile tile;
+      if (ch.read_tile(ti, tile)) {
+        if (tile.double_samples.size()) {
+          most_recent_data_sample.time = tile.double_samples[tile.double_samples.size() - 1].time;
+          most_recent_data_sample.value = tile.double_samples[tile.double_samples.size() - 1].value;
+          most_recent_data_sample.weight = tile.double_samples[tile.double_samples.size() - 1].weight;
+          most_recent_data_sample.stddev = tile.double_samples[tile.double_samples.size() - 1].stddev;
+        }
+      }
+    }
+
   } else {
     gcic_found_times = &found_times;
     gcic_found_values = &found_values;
@@ -213,7 +247,8 @@ int main(int argc, char **argv)
   Range all_found_times;
   for (unsigned i = 0; i < subchannel_names.size(); i++) {
     Range found_times, found_values;
-    get_channel_info(store, uid, subchannel_names[i], requested_times, found_times, found_values);
+    DataSample<double> most_recent_data_sample;
+    get_channel_info(store, uid, subchannel_names[i], requested_times, found_times, found_values, most_recent_data_sample);
     Json::Value channel_bounds(Json::objectValue);
     if (!found_times.empty()) {
       all_found_times.add(found_times);
@@ -227,6 +262,13 @@ int main(int argc, char **argv)
     if (channel_bounds.size()) {
       channel_specs[subchannel_names[i]] = Json::Value(Json::objectValue);
       channel_specs[subchannel_names[i]]["channel_bounds"]=channel_bounds;
+    }
+    // only include the value_at_max_time if one was actually found (i.e. the value is not NAN)
+    if (!isnan(most_recent_data_sample.value)) {
+      Json::Value most_recent(Json::objectValue);
+      most_recent["time"]=most_recent_data_sample.time;
+      most_recent["value"]=most_recent_data_sample.value;
+      channel_specs[subchannel_names[i]]["most_recent_data_sample"]=most_recent;
     }
   }
   info["channel_specs"]=channel_specs;
