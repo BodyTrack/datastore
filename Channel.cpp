@@ -463,6 +463,9 @@ void Channel::get_subchannel_names(KVS &kvs, int owner_id,
   }
 }
 
+// Returns child with overlapping time.  Recurses until reaching desired_level if possible.  If desired_level
+// isn't present, returns the lowest level available.  Pass TileIndex::lowest_level() to return the lowest level
+// tile overlapping time t.
 TileIndex Channel::find_child_overlapping_time(TileIndex ti, double t, int desired_level) const {
   assert(!ti.is_null());
   // Start at root tile and move downwards
