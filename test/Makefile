@@ -169,22 +169,31 @@ test-export-json-multiple-uid:
 test-info:
 	rm -rf foo.kvs
 	mkdir -p foo.kvs
-	../import foo.kvs 1 speck testdata/info1.json $(CMPJSON) output/test-info-1
-	../info foo.kvs -r 1 --prefix speck           $(CMPJSON) output/test-info-2
+	../import foo.kvs 1 speck testdata/info1.json 			$(CMPJSON) output/test-info-1
+	../info foo.kvs -r 1 --find-most-recent --prefix speck  $(CMPJSON) output/test-info-2
+	../info foo.kvs -r 1                    --prefix speck  $(CMPJSON) output/test-info-2b
 	../import foo.kvs 1 speck testdata/info2.json $(CMPJSON) output/test-info-3
-	../info foo.kvs -r 1 --prefix speck           $(CMPJSON) output/test-info-4
+	../info foo.kvs -r 1 --find-most-recent --prefix speck  $(CMPJSON) output/test-info-4
+	../info foo.kvs -r 1                    --prefix speck  $(CMPJSON) output/test-info-4b
 	../import foo.kvs 1 speck testdata/info3.json $(CMPJSON) output/test-info-5
-	../info foo.kvs -r 1 --prefix speck           $(CMPJSON) output/test-info-6
+	../info foo.kvs -r 1 --find-most-recent --prefix speck  $(CMPJSON) output/test-info-6
+	../info foo.kvs -r 1                    --prefix speck  $(CMPJSON) output/test-info-6b
 	../import foo.kvs 1 speck testdata/info4.json $(CMPJSON) output/test-info-7
-	../info foo.kvs -r 1 --prefix speck           $(CMPJSON) output/test-info-8
+	../info foo.kvs -r 1 --find-most-recent --prefix speck  $(CMPJSON) output/test-info-8
+	../info foo.kvs -r 1                    --prefix speck  $(CMPJSON) output/test-info-8b
 	../import foo.kvs 1 speck testdata/info5.json $(CMPJSON) output/test-info-9
-	../info foo.kvs -r 1 --prefix speck           $(CMPJSON) output/test-info-10
+	../info foo.kvs -r 1 --find-most-recent --prefix speck  $(CMPJSON) output/test-info-10
+	../info foo.kvs -r 1                    --prefix speck  $(CMPJSON) output/test-info-10b
 	../import foo.kvs 1 speck testdata/info6.json $(CMPJSON) output/test-info-11
-	../info foo.kvs -r 1 --prefix speck           $(CMPJSON) output/test-info-12
+	../info foo.kvs -r 1 --find-most-recent --prefix speck  $(CMPJSON) output/test-info-12
+	../info foo.kvs -r 1                    --prefix speck  $(CMPJSON) output/test-info-12b
 	../import foo.kvs 1 speck testdata/info7.json $(CMPJSON) output/test-info-13
-	../info foo.kvs -r 1 --prefix speck           $(CMPJSON) output/test-info-14
-	../info foo.kvs -r 1 --prefix speck.particle_concentration $(CMPJSON) output/test-info-15
-	../info foo.kvs -r 1 --prefix speck.humidity $(CMPJSON) output/test-info-16
+	../info foo.kvs -r 1 --find-most-recent --prefix speck  $(CMPJSON) output/test-info-14
+	../info foo.kvs -r 1                    --prefix speck  $(CMPJSON) output/test-info-14b
+	../info foo.kvs -r 1 --find-most-recent --prefix speck.particle_concentration $(CMPJSON) output/test-info-15
+	../info foo.kvs -r 1                    --prefix speck.particle_concentration $(CMPJSON) output/test-info-15b
+	../info foo.kvs -r 1 --find-most-recent --prefix speck.humidity $(CMPJSON) output/test-info-16
+	../info foo.kvs -r 1                    --prefix speck.humidity $(CMPJSON) output/test-info-16b
 
 test-import-json-format: compare_json
 	rm -rf foo.kvs

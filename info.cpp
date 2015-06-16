@@ -23,9 +23,12 @@
 void usage()
 {
   std::cerr << "Usage:\n";
-  std::cerr << "info store.kvs [-r] [-v] uid [--prefix channel_prefix] [--min-time t] [--max-time t]\n";
+  std::cerr << "info store.kvs [-r] [-v] uid [--find-most-recent] [--prefix channel_prefix] [--min-time t] [--max-time t]\n";
   std::cerr << "\n";
-  std::cerr << "If channel_prefix is omitted and empty string and -r is given, give info on all channels for uid\n";
+  std::cerr << "* If channel_prefix is omitted and empty string and -r is given, give info on all channels for uid\n";
+  std::cerr << "* Include the --find-most-recent switch if you want it to try to find the most recent data sample for\n";
+  std::cerr << "  each channel. Has no effect if min and/or max time is specified.\n";
+  std::cerr << "\n";
   std::cerr << "examples:\n";
   std::cerr << "info production.kvs -r 2 '' \n";
   std::cerr << "info production.kvs -r 2 myandroid\n";
@@ -123,10 +126,10 @@ bool get_channel_info_callback(const Tile &tile, Range requested_times)
 }
 
 /**
- * Gets the info for the given channel.  If the times Range is Range::all(), will also attempt to find and return the
- * most recent data sample in most_recent_data_sample.  The value field of most_recent_data_sample will be NAN if no
- * attempt was made to find the most recent data sample (e.g. the times Range is something other than Range::all()), or
- * if it could not be found.
+ * Gets the info for the given channel.  If will_find_most_recent_data_sample is true and the times Range is
+ * Range::all(), will also attempt to find and return the most recent data sample in most_recent_data_sample.  The value
+ * field of most_recent_data_sample will be NAN if no attempt was made to find the most recent data sample (e.g. the
+ * times Range is something other than Range::all()), or if it could not be found.
  */
 void get_channel_info(KVS &store,
                       int uid,
@@ -134,12 +137,15 @@ void get_channel_info(KVS &store,
                       Range times,
                       Range &found_times,
                       Range &found_values,
-                      DataSample<double> &most_recent_data_sample) {
+                      DataSample<double> &most_recent_data_sample,
+                      bool will_find_most_recent_data_sample) {
 
   Channel ch(store, uid, channel_name);
   Channel::Locker locker(ch);
 
-  most_recent_data_sample.value = NAN;
+  if (will_find_most_recent_data_sample) {
+    most_recent_data_sample.value = NAN;
+  }
 
   if (times == Range::all()) {
     ChannelInfo info;
@@ -158,7 +164,7 @@ void get_channel_info(KVS &store,
     // Try to find the value at the max time. Do so by using find_child_overlapping_time() to drill down through the
     // tile tree to find the appropriate tile.  Then try to read read the tile and, if successful, then pick out the
     // last double value found, if any (e.g. it might be a tile of all comments)
-    if (!found_times.empty() && !found_values.empty()) {
+    if (will_find_most_recent_data_sample && !found_times.empty() && !found_values.empty()) {
       TileIndex ti = ch.find_child_overlapping_time(info.nonnegative_root_tile_index,
                                                     found_times.max,
                                                     TileIndex::lowest_level());
@@ -197,12 +203,14 @@ int main(int argc, char **argv)
   Range requested_times = Range::all();
   int argno = 0;
   int verbose = 0;
+  bool will_find_most_recent_data_sample = false;
 
   char **argptr = argv+1;
   while (*argptr) {
     std::string arg(*argptr++);
     if (arg == "-r") recurse = true;
     else if (arg == "-v" && *argptr) verbose++;
+    else if (arg == "--find-most-recent" && *argptr) will_find_most_recent_data_sample = true;
     else if (arg == "--prefix" && *argptr) channel_prefix = *argptr++;
     else if (arg == "--min-time" && *argptr) requested_times.min = parse_time(*argptr++);
     else if (arg == "--max-time" && *argptr) requested_times.max = parse_time(*argptr++);
@@ -248,7 +256,7 @@ int main(int argc, char **argv)
   for (unsigned i = 0; i < subchannel_names.size(); i++) {
     Range found_times, found_values;
     DataSample<double> most_recent_data_sample;
-    get_channel_info(store, uid, subchannel_names[i], requested_times, found_times, found_values, most_recent_data_sample);
+    get_channel_info(store, uid, subchannel_names[i], requested_times, found_times, found_values, most_recent_data_sample, will_find_most_recent_data_sample);
     Json::Value channel_bounds(Json::objectValue);
     if (!found_times.empty()) {
       all_found_times.add(found_times);
@@ -263,8 +271,8 @@ int main(int argc, char **argv)
       channel_specs[subchannel_names[i]] = Json::Value(Json::objectValue);
       channel_specs[subchannel_names[i]]["channel_bounds"]=channel_bounds;
     }
-    // only include the value_at_max_time if one was actually found (i.e. the value is not NAN)
-    if (!isnan(most_recent_data_sample.value)) {
+    // only include the most_recent_data_sample if requested and if one was actually found (i.e. the value is not NAN)
+    if (will_find_most_recent_data_sample && !isnan(most_recent_data_sample.value)) {
       Json::Value most_recent(Json::objectValue);
       most_recent["time"]=most_recent_data_sample.time;
       most_recent["value"]=most_recent_data_sample.value;
