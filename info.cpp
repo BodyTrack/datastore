@@ -33,7 +33,7 @@ void usage()
   std::cerr << "info production.kvs -r 2 '' \n";
   std::cerr << "info production.kvs -r 2 myandroid\n";
   std::cerr << "info production.kvs 2 myandroid.comments\n";
-  std::cerr << "info production.kvs 2 myandroid.comments --begin-time 1315082409 --end-time 1315095000\n";
+  std::cerr << "info production.kvs 2 myandroid.comments --min-time 1315082409 --max-time 1315095000\n";
   std::cerr << "\n";
   std::cerr << "Exiting...\n";
   exit(1);
