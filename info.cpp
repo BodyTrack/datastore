@@ -210,7 +210,7 @@ int main(int argc, char **argv)
     std::string arg(*argptr++);
     if (arg == "-r") recurse = true;
     else if (arg == "-v" && *argptr) verbose++;
-    else if (arg == "--find-most-recent" && *argptr) will_find_most_recent_data_sample = true;
+    else if (arg == "--find-most-recent") will_find_most_recent_data_sample = true;
     else if (arg == "--prefix" && *argptr) channel_prefix = *argptr++;
     else if (arg == "--min-time" && *argptr) requested_times.min = parse_time(*argptr++);
     else if (arg == "--max-time" && *argptr) requested_times.max = parse_time(*argptr++);
