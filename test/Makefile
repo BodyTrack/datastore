@@ -140,6 +140,7 @@ test-export-csv:
 	mkdir -p foo.kvs
 	../import foo.kvs 1 rphone testdata/multiple.json                      $(CMPJSON) output/test-export-csv-1
 	../export --csv foo.kvs 1 rphone.latitude rphone.altitude rphone.speed $(CMPTXT) output/test-export-csv-2
+	../export --csv foo.kvs 1 rphone.provider $(CMPTXT) output/test-export-csv-3
 
 test-export-csv-multiple-uid:
 	rm -rf foo.kvs
@@ -157,6 +158,7 @@ test-export-json:
 	../export --json foo.kvs 1 rphone.latitude rphone.altitude rphone.speed --start 1312774911 $(CMPJSON) output/test-export-json-4
 	../export --json foo.kvs 1 rphone.latitude rphone.altitude rphone.speed --start 1312774908 --end 1312774911 $(CMPJSON) output/test-export-json-5
 	../export --json foo.kvs 1 rphone.latitude rphone.altitude rphone.speed rphone.bogus --start 1312774908 --end 1312774911 $(CMPJSON) output/test-export-json-6
+	../export --json foo.kvs 1 rphone.provider $(CMPJSON) output/test-export-json-7
 
 test-export-json-multiple-uid:
 	rm -rf foo.kvs

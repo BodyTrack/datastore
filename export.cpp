@@ -114,6 +114,21 @@ std::string quote_csv(std::string str) {
   }
 }
 
+std::string quote_json(std::string str) {
+  std::string ret = "\"";
+  for (unsigned i = 0; i < str.length(); i++) {
+    // if this character is a double-quote, then escape it
+    if (str[i] == '"') {
+      ret += "\\\"";
+    } else {
+      ret += str[i];
+    }
+  }
+  ret += "\"";
+
+  return ret;
+}
+
 // TODO(rsargent): implement version that can subsample
 // TODO(rsargent): move to ChannelReader.{cpp,h}
 class ChannelReader {
@@ -288,7 +303,7 @@ void export_json(KVS &store, Range timerange, int uid, const std::vector<std::st
   // Emit header
   std::cout << "{\"channel_names\":[";
   for (unsigned i = 0; i < readers.size(); i++) {
-    std::cout << "\"" << quote_csv(channel_full_names[i]) << "\"";
+    std::cout << quote_json(channel_full_names[i]);
     if (i < readers.size() - 1) {
       std::cout << ",";
     }
@@ -323,7 +338,7 @@ void export_json(KVS &store, Range timerange, int uid, const std::vector<std::st
         if (readers[i]->double_sample()) {
           printf("%.*g", double_precision_digits, readers[i]->double_sample()->value);
         } else if (readers[i]->string_sample()) {
-          std::cout << quote_csv(readers[i]->string_sample()->value).c_str();
+          std::cout << quote_json(readers[i]->string_sample()->value).c_str();
         } else {
           abort();
         }
