@@ -10,6 +10,10 @@
       "most_recent_data_sample": {
         "time": 973959071,
         "value": 42
+      },
+      "most_recent_string_sample": {
+        "time": 1434399971,
+        "value": "This is an uninteresting comment for the humidity channel at time 1434399971."
       }
     }
   },

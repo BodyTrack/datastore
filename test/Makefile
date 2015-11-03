@@ -196,6 +196,18 @@ test-info:
 	../info foo.kvs -r 1                    --prefix speck.particle_concentration $(CMPJSON) output/test-info-15b
 	../info foo.kvs -r 1 --find-most-recent --prefix speck.humidity $(CMPJSON) output/test-info-16
 	../info foo.kvs -r 1                    --prefix speck.humidity $(CMPJSON) output/test-info-16b
+	../import foo.kvs 1 fluxcapacitor testdata/info8.json 			$(CMPJSON) output/test-info-17
+	../info foo.kvs -r 1 --find-most-recent --prefix fluxcapacitor $(CMPJSON) output/test-info-18
+	../info foo.kvs -r 1                    --prefix fluxcapacitor $(CMPJSON) output/test-info-18b
+	../import foo.kvs 1 fluxcapacitor testdata/info9.json 			$(CMPJSON) output/test-info-19
+	../info foo.kvs -r 1 --find-most-recent --prefix fluxcapacitor $(CMPJSON) output/test-info-20
+	../info foo.kvs -r 1                    --prefix fluxcapacitor $(CMPJSON) output/test-info-20b
+	../import foo.kvs 1 fluxcapacitor testdata/info10.json 			$(CMPJSON) output/test-info-21
+	../info foo.kvs -r 1 --find-most-recent --prefix fluxcapacitor $(CMPJSON) output/test-info-22
+	../info foo.kvs -r 1                    --prefix fluxcapacitor $(CMPJSON) output/test-info-22b
+	../import foo.kvs 1 fluxcapacitor testdata/info11.json 			$(CMPJSON) output/test-info-23
+	../info foo.kvs -r 1 --find-most-recent --prefix fluxcapacitor $(CMPJSON) output/test-info-24
+	../info foo.kvs -r 1                    --prefix fluxcapacitor $(CMPJSON) output/test-info-24b
 
 test-import-json-format: compare_json
 	rm -rf foo.kvs

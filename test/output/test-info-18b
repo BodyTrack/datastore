@@ -1,0 +1,12 @@
+{
+  "channel_specs": {
+    "fluxcapacitor.bar": {
+      "channel_bounds": {
+        "max_time": 1434399980,
+        "min_time": 1434399980
+      }
+    }
+  },
+  "max_time": 1434399980,
+  "min_time": 1434399980
+}

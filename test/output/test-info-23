@@ -1,0 +1,22 @@
+{
+  "channel_specs": {
+    "foo": {
+      "channel_bounds": {
+        "max_time": 1434399984,
+        "max_value": 1024,
+        "min_time": 1434399981,
+        "min_value": 42
+      },
+      "imported_bounds": {
+        "max_time": 1434399984,
+        "max_value": 1024,
+        "min_time": 1434399984,
+        "min_value": 1024
+      }
+    }
+  },
+  "failed_records": 0,
+  "max_time": 1434399984,
+  "min_time": 1434399984,
+  "successful_records": 1
+}

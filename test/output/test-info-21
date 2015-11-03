@@ -1,0 +1,32 @@
+{
+  "channel_specs": {
+    "bar": {
+      "channel_bounds": {
+        "max_time": 1434399983,
+        "min_time": 1434399980
+      },
+      "imported_bounds": {
+        "max_time": 1434399983,
+        "min_time": 1434399983
+      }
+    },
+    "foo": {
+      "channel_bounds": {
+        "max_time": 1434399983,
+        "max_value": 343,
+        "min_time": 1434399981,
+        "min_value": 42
+      },
+      "imported_bounds": {
+        "max_time": 1434399983,
+        "max_value": 343,
+        "min_time": 1434399983,
+        "min_value": 343
+      }
+    }
+  },
+  "failed_records": 0,
+  "max_time": 1434399983,
+  "min_time": 1434399983,
+  "successful_records": 1
+}

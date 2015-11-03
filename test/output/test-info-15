@@ -10,6 +10,10 @@
       "most_recent_data_sample": {
         "time": 1432857705,
         "value": 19.5
+      },
+      "most_recent_string_sample": {
+        "time": 1432856680,
+        "value": "This is an uninteresting comment for the particle_concentration channel at time 1432856680."
       }
     }
   },

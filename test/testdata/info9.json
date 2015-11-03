@@ -1,0 +1,4 @@
+{"channel_names":["foo","bar"], "data":[
+  [1434399981,42,null],
+  [1434399982,null,"this is a comment for bar at time 1434399982"]
+]}
