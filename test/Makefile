@@ -208,6 +208,9 @@ test-info:
 	../import foo.kvs 1 fluxcapacitor testdata/info11.json 			$(CMPJSON) output/test-info-23
 	../info foo.kvs -r 1 --find-most-recent --prefix fluxcapacitor $(CMPJSON) output/test-info-24
 	../info foo.kvs -r 1                    --prefix fluxcapacitor $(CMPJSON) output/test-info-24b
+	../import foo.kvs 1 fluxcapacitor testdata/info12.json 			$(CMPJSON) output/test-info-25
+	../info foo.kvs -r 1 --find-most-recent --prefix fluxcapacitor $(CMPJSON) output/test-info-26
+	../info foo.kvs -r 1                    --prefix fluxcapacitor $(CMPJSON) output/test-info-26b
 
 test-import-json-format: compare_json
 	rm -rf foo.kvs
