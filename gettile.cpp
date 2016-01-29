@@ -216,17 +216,23 @@ void multi_gettile(KVS &store, int uid, std::vector<std::string> &full_channel_n
     Json::Value timeslice = Json::Value(Json::arrayValue);
     double time = (*data[0])[i].time;
     timeslice.append(Json::Value(time));
-    
+
+    bool hasAtLeastOneNonNullField = false;
     for (unsigned j = 0; j < full_channel_names.size(); j++) {
       DataSample<double> &sample = (*data[j])[i];
       assert(sample.time == time);
       if (sample.weight > 0) {
         timeslice.append(Json::Value(sample.value));
+        hasAtLeastOneNonNullField = true;
       } else {
         timeslice.append(Json::Value()); // NULL means no data
       }
     }
-    json_data.append(timeslice);
+
+    // don't bother returning this record if all the values are null
+    if (hasAtLeastOneNonNullField) {
+      json_data.append(timeslice);
+    }
   }
       
   Json::Value ret(Json::objectValue);
