@@ -1,8 +1,15 @@
+//Example:
+//From Chris Bartley to Everyone: (3:19 PM)
+///datastore/data-prod/3/feed_26
+//From Chris Bartley to Everyone: (3:34 PM)
+///datastore/bin/export /datastore/data-prod --csv --start 1604638800 3 feed_26.OZONE_PPM
+
 // C++
 #include <cfloat>
 #include <iostream>
 #include <string>
 #include <vector>
+#include <chrono>
 
 // C
 #include <math.h>
@@ -11,6 +18,9 @@
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
+
+// Date and timezone libraries, in local repo
+#include "date/tz.h"
 
 // Local
 #include "Arglist.h"
@@ -34,17 +44,20 @@ void usage(const char *fmt, ...) {
   std::cerr << "Usage:\n";
   std::cerr << "export [flags] store.kvs uid dev_nickname.ch_name [dev_nickname.ch_name ...]\n";
   std::cerr << "export [flags] store.kvs uid.dev_nickname.ch_name [uid.dev_nickname.ch_name ...]\n";
-  std::cerr << "   --start:  start time (floating-point epoch time).  Defaults to beginning of time.\n";
-  std::cerr << "   --end:    end time (floating-point epoch time).  Defaults to end of time.\n";
-  std::cerr << "   --csv:    export in CSV format\n";
-  std::cerr << "   --json:   export in JSON format\n";
+  std::cerr << "   --start:           start time (floating-point epoch time).  Defaults to beginning of time.\n";
+  std::cerr << "   --end:             end time (floating-point epoch time).  Defaults to end of time.\n";
+  std::cerr << "   --csv:             export in CSV format\n";
+  std::cerr << "   --json:            export in JSON format\n";
+  std::cerr << "   --timezone:        Export ISO 8601 timestamps in specified timezone.\n";
+  std::cerr << "                      If omitted, use floating-point epoch timestamps.\n";
+  std::cerr << "                      Examples:  America/New-York, Europe/London, UTC\n";
   std::cerr << "   --full-precision:  export full-precision data\n";
-  std::cerr << "             IEEE 754 double-precision values have ~15.6 digits of precision.\n";
-  std::cerr << "             Default output uses 15 digits of precision to avoid displaying\n";
-  std::cerr << "             more digits than actual precision.  --fullprecision forces 16-digit\n";
-  std::cerr << "             sometimes ending similarly to 999999 or 000001.\n";
-  std::cerr << "             output, to capture fully all the bits of precision, at the expense\n";
-  std::cerr << "             of showing an imprecise final digits, e.g. ending with 9999 or 0001\n";
+  std::cerr << "                      IEEE 754 double-precision values have ~15.6 digits of precision.\n";
+  std::cerr << "                      Default output uses 15 digits of precision to avoid displaying\n";
+  std::cerr << "                      more digits than actual precision.  --fullprecision forces 16-digit\n";
+  std::cerr << "                      sometimes ending similarly to 999999 or 000001.\n";
+  std::cerr << "                      output, to capture fully all the bits of precision, at the expense\n";
+  std::cerr << "                      of showing an imprecise final digits, e.g. ending with 9999 or 0001\n";
   std::cerr << "Exiting...\n";
   exit(1);
 }
@@ -230,9 +243,24 @@ private:
   }
 };
 
-void export_csv(KVS &store, Range timerange, int uid, const std::vector<std::string> &channel_full_names) {
-  std::vector<simple_shared_ptr<ChannelReader> > readers;
 
+// Write timestamp to stdout
+// If timezone is not null, use it
+// Otherwise, output as epoch timestamp in float
+
+void output_timestamp(double epoch_time, const date::time_zone *timezone = NULL) {
+  if (timezone) {
+    std::chrono::duration<double> chrono_duration(epoch_time);
+    auto datetime_with_zone = date::make_zoned(timezone, date::sys_time<std::chrono::duration<double>>(chrono_duration));
+    std::cout << date::format("%Y-%m-%dT%H:%M:%S%Ez", datetime_with_zone);
+  } else {
+    printf("%.*g", double_precision_digits, epoch_time);
+  }
+}
+  
+void export_csv(KVS &store, Range timerange, int uid, const std::vector<std::string> &channel_full_names, const date::time_zone *timezone = NULL) {
+  std::vector<simple_shared_ptr<ChannelReader> > readers;
+  
   for (unsigned i = 0; i < channel_full_names.size(); i++) {
     simple_shared_ptr<Channel> ch;
     if (uid == -1) {
@@ -245,7 +273,11 @@ void export_csv(KVS &store, Range timerange, int uid, const std::vector<std::str
   }
 
   // Emit header
-  std::cout << quote_csv("EpochTime");
+  if (timezone) {
+    std::cout << quote_csv("Iso8601Time");
+  } else {
+    std::cout << quote_csv("Time");
+  }
   for (unsigned i = 0; i < readers.size(); i++) {
     std::cout << ",";
     std::cout << quote_csv(channel_full_names[i]);
@@ -265,7 +297,8 @@ void export_csv(KVS &store, Range timerange, int uid, const std::vector<std::str
     // Emit any samples that match this time.  Emit empty entries
     // for channels that don't have a for this time
 
-    printf("%.*g", double_precision_digits, time);
+    output_timestamp(time, timezone);
+ 
     for (unsigned i = 0; i < readers.size(); i++) {
       std::cout << ",";
       if (readers[i]->time() == time) {
@@ -286,7 +319,7 @@ void export_csv(KVS &store, Range timerange, int uid, const std::vector<std::str
   }
 }
 
-void export_json(KVS &store, Range timerange, int uid, const std::vector<std::string> &channel_full_names) {
+void export_json(KVS &store, Range timerange, int uid, const std::vector<std::string> &channel_full_names, const date::time_zone *timezone = NULL) {
   std::vector<simple_shared_ptr<ChannelReader> > readers;
 
   for (unsigned i = 0; i < channel_full_names.size(); i++) {
@@ -330,7 +363,10 @@ void export_json(KVS &store, Range timerange, int uid, const std::vector<std::st
     if (hasPrintedAtLeastOneLine) {
       std::cout << ",";
     }
-    printf("\n[%.*g", double_precision_digits, time);
+    printf("\n[");
+    if (timezone) printf("\"");
+    output_timestamp(time, timezone);
+    if (timezone) printf("\"");
     for (unsigned i = 0; i < readers.size(); i++) {
       std::cout << ",";
       if (readers[i]->time() == time) {
@@ -368,6 +404,7 @@ int execute(Arglist args) {
   std::string storename;
   int uid = -1;
   std::vector<std::string> channel_full_names;
+  const date::time_zone *timezone = NULL;
 
   while (!args.empty()) {
     std::string arg = args.shift();
@@ -381,6 +418,8 @@ int execute(Arglist args) {
       timerange.max = args.shift_double();
     } else if (arg == "--full-precision") {
       double_precision_digits = 16;
+    } else if (arg == "--timezone") {
+      timezone = date::locate_zone(args.shift());
     } else if (Arglist::is_flag(arg)) {
       usage("Unknown flag '%s'", arg.c_str());
     } else if (storename == "") {
@@ -412,10 +451,10 @@ int execute(Arglist args) {
       export_legacy(store, timerange, uid, channel_full_names);
       break;
     case CSV_FORMAT:
-      export_csv(store, timerange, uid, channel_full_names);
+      export_csv(store, timerange, uid, channel_full_names, timezone);
       break;
     case JSON_FORMAT:
-      export_json(store, timerange, uid, channel_full_names);
+      export_json(store, timerange, uid, channel_full_names, timezone);
       break;
     default:
       assert(0);

@@ -1,4 +1,4 @@
-CPPFLAGS = -g -Wall -Ijsoncpp-src-0.5.0-patched/include -O3
+CPPFLAGS = -g -Wall -Ijsoncpp-src-0.5.0-patched/include -Idate/include -O3 
 # LDFLAGS = -Ljsoncpp-src-0.5.0-patched/libs -ljson_linux_libmt -static
 
 JSON_DIR = jsoncpp-src-0.5.0-patched
@@ -75,8 +75,10 @@ install-test-deploy: $(INSTALL_BINS)
 copy: copy.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h
 	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
-export: export.cpp $(SRCS) $(INCLUDES)
-	g++ $(CPPFLAGS) $@.cpp -o $@ $(SRCS) $(LDFLAGS)
+# tz timezone library also requires curl library
+# Omit LDFLAGS so we don't attempt to build a static executable
+export: export.cpp date/src/tz.cpp $(SRCS) $(INCLUDES)
+	g++ $(CPPFLAGS) -I date/include $@.cpp -o $@ date/src/tz.cpp $(SRCS) -lcurl
 
 gettile: gettile.cpp $(SRCS) $(INCLUDES)
 	g++ $(CPPFLAGS) $@.cpp -o $@ $(SRCS) $(LDFLAGS)
