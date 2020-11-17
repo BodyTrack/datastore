@@ -50,7 +50,7 @@ void usage(const char *fmt, ...) {
   std::cerr << "   --json:            export in JSON format\n";
   std::cerr << "   --timezone:        Export ISO 8601 timestamps in specified timezone.\n";
   std::cerr << "                      If omitted, use floating-point epoch timestamps.\n";
-  std::cerr << "                      Examples:  America/New-York, Europe/London, UTC\n";
+  std::cerr << "                      Examples:  America/New_York, Europe/London, UTC\n";
   std::cerr << "   --full-precision:  export full-precision data\n";
   std::cerr << "                      IEEE 754 double-precision values have ~15.6 digits of precision.\n";
   std::cerr << "                      Default output uses 15 digits of precision to avoid displaying\n";
