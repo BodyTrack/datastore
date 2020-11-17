@@ -1,4 +1,6 @@
-CPPFLAGS = -g -Wall -Ijsoncpp-src-0.5.0-patched/include -Idate/include -O3 
+COMPILER = g++
+
+CPPFLAGS = -g -Wall -Ijsoncpp-src-0.5.0-patched/include -Idate/include -O3
 # LDFLAGS = -Ljsoncpp-src-0.5.0-patched/libs -ljson_linux_libmt -static
 
 JSON_DIR = jsoncpp-src-0.5.0-patched
@@ -73,29 +75,29 @@ install-test-deploy: $(INSTALL_BINS)
 #	(cd jsoncpp-src-0.5.0-patched && python scons.py platform=linux-gcc && #cd libs && ln -sf linux*/*.a libjson_libmt.a)
 
 copy: copy.cpp BinaryIO.cpp BinaryIO.h Binrec.cpp Binrec.h Channel.cpp Channel.h ChannelInfo.h crc32.cpp crc32.h DataSample.h FilesystemKVS.cpp FilesystemKVS.h KVS.cpp KVS.h Log.cpp Log.h Tile.cpp Tile.h TileIndex.h utils.cpp utils.h
-	g++ $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
+	$(COMPILER) $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
 
 # tz timezone library also requires curl library
 # Omit LDFLAGS so we don't attempt to build a static executable
 export: export.cpp date/src/tz.cpp $(SRCS) $(INCLUDES)
-	g++ $(CPPFLAGS) -I date/include $@.cpp -o $@ date/src/tz.cpp $(SRCS) -lcurl
+	$(COMPILER) $(CPPFLAGS) -I date/include $@.cpp -o $@ date/src/tz.cpp $(SRCS) -lcurl
 
 gettile: gettile.cpp $(SRCS) $(INCLUDES)
-	g++ $(CPPFLAGS) $@.cpp -o $@ $(SRCS) $(LDFLAGS)
+	$(COMPILER) $(CPPFLAGS) $@.cpp -o $@ $(SRCS) $(LDFLAGS)
 
 IMPORT_SRCS = import.cpp ImportBT.cpp ImportJson.cpp
 
 import: $(IMPORT_SRCS) $(SRCS) $(INCLUDES)
-	g++ $(CPPFLAGS) $(IMPORT_SRCS) -o $@ $(SRCS) $(LDFLAGS)
+	$(COMPILER) $(CPPFLAGS) $(IMPORT_SRCS) -o $@ $(SRCS) $(LDFLAGS)
 
 info: info.cpp $(SRCS) $(INCLUDES)
-	g++ $(CPPFLAGS) $@.cpp -o $@ $(SRCS) $(LDFLAGS)
+	$(COMPILER) $(CPPFLAGS) $@.cpp -o $@ $(SRCS) $(LDFLAGS)
 
 docs:
 	doxygen KVS.cpp KVS.h
 
 read_bt: Binrec.cpp crc32.cpp DataStore.cpp utils.cpp Log.cpp jsoncpp-src-0.5.0-patched/libs
-	g++ -g $(CPPFLAGS) Binrec.cpp crc32.cpp DataStore.cpp utils.cpp -o $@  -L./jsoncpp-src-0.5.0-patched/libs/linux-gcc -ljson_linux-gcc
+	$(COMPILER) -g $(CPPFLAGS) Binrec.cpp crc32.cpp DataStore.cpp utils.cpp -o $@  -L./jsoncpp-src-0.5.0-patched/libs/linux-gcc -ljson_linux-gcc
 	./read_bt
 
 #jsoncpp-src-0.5.0-patched/libs:
@@ -104,7 +106,7 @@ read_bt: Binrec.cpp crc32.cpp DataStore.cpp utils.cpp Log.cpp jsoncpp-src-0.5.0-
 #	cd jsoncpp-src-0.5.0-patched/libs/linux-gcc; ln -sf libjson_linux-gcc-*.a libjson_linux-gcc.a
 
 tilegen: $(SOURCES) $(INCLUDES)
-	g++ -g $(CPPFLAGS) $(SOURCES) -o $@ $(LDFLAGS) 
+	$(COMPILER) -g $(CPPFLAGS) $(SOURCES) -o $@ $(LDFLAGS)
 
 #-./tilegen
 
