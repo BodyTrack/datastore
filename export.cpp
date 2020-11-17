@@ -276,7 +276,7 @@ void export_csv(KVS &store, Range timerange, int uid, const std::vector<std::str
   if (timezone) {
     std::cout << quote_csv("Iso8601Time");
   } else {
-    std::cout << quote_csv("Time");
+    std::cout << quote_csv("EpochTime");
   }
   for (unsigned i = 0; i < readers.size(); i++) {
     std::cout << ",";
