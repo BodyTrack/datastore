@@ -35,6 +35,21 @@ Build and install
     make test
     make install-local
 
+Installing on Windows
+--------------------
+
+Install cygwin and ensure the following packages get installed:
+
+    make
+    gcc-g++
+    libcurl-devel
+
+Build and install
+
+    make
+    make test
+    make install-local
+
 Importing sparse data
 ---------------------
 
